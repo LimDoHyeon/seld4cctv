@@ -151,8 +151,8 @@ def main(argv):
     nb_epoch = 2 if params['quick_test'] else params['nb_epochs']
     for epoch_cnt in range(nb_epoch):
         start = time.time()
-        hist = model.fit_generator(
-            generator=data_gen_train.generate(),
+        hist = model.fit(
+            x=data_gen_train.generate(),
             steps_per_epoch=2 if params['quick_test'] else data_gen_train.get_total_batches_in_data(),
             validation_data=data_gen_test.generate(),
             validation_steps=2 if params['quick_test'] else data_gen_test.get_total_batches_in_data(),
@@ -162,8 +162,8 @@ def main(argv):
         tr_loss[epoch_cnt] = hist.history.get('loss')[-1]
         val_loss[epoch_cnt] = hist.history.get('val_loss')[-1]
 
-        pred = model.predict_generator(
-            generator=data_gen_test.generate(),
+        pred = model.predict(
+            x=data_gen_test.generate(),
             steps=2 if params['quick_test'] else data_gen_test.get_total_batches_in_data(),
             verbose=2
         )

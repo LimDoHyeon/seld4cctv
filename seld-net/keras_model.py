@@ -2,16 +2,26 @@
 # The SELDnet architecture
 #
 
-from keras.layers import Bidirectional, Conv2D, MaxPooling2D, Input, MaxPooling3D, Conv3D, merge
-from keras.layers.core import Dense, Activation, Dropout, Reshape, Permute
-from keras.layers.recurrent import GRU
-from keras.layers.normalization import BatchNormalization
-from keras.models import Model
-from keras.layers.wrappers import TimeDistributed
-from keras.optimizers import Adam
-import keras
-keras.backend.set_image_data_format('channels_first')
+import tensorflow as tf
+from tensorflow.keras.layers import (
+    Activation,
+    BatchNormalization,
+    Bidirectional,
+    Conv2D,
+    Dense,
+    Dropout,
+    GRU,
+    Input,
+    MaxPooling2D,
+    Permute,
+    Reshape,
+    TimeDistributed,
+)
+from tensorflow.keras.models import Model
+from tensorflow.keras.optimizers import Adam
 from IPython import embed
+
+tf.keras.backend.set_image_data_format('channels_first')
 
 
 def get_model(data_in, data_out, dropout_rate, nb_cnn2d_filt, pool_size,
