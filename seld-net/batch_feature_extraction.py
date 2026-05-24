@@ -3,7 +3,7 @@
 
 import cls_feature_class
 
-dataset_name = 'spatial'  # Dataset generated from Dataset/spatial/train.csv and test.csv
+dataset_name = 'spatial'  # Dataset generated from Dataset/spatial-mic-array/train.csv and test.csv
 
 # Extracts feature and labels for all overlap and splits
 for ovo in [1]:  # CCTV spatial manifests are generated as overlap 1, split 1.

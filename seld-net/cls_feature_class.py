@@ -24,8 +24,8 @@ class FeatureClass:
         if dataset == 'spatial':
             self._base_folder = os.path.join(self._repo_root, 'Dataset', 'spatial-mic-array', 'seldnet')
             self._manifest_paths = [
-                os.path.join(self._repo_root, 'Dataset', 'spatial', 'train.csv'),
-                os.path.join(self._repo_root, 'Dataset', 'spatial', 'test.csv')
+                os.path.join(self._repo_root, 'Dataset', 'spatial-mic-array', 'train.csv'),
+                os.path.join(self._repo_root, 'Dataset', 'spatial-mic-array', 'test.csv')
             ]
         elif dataset == 'ansim':
             self._base_folder = os.path.join('/scratch/asignal/sharath', 'doa_data/')
@@ -68,7 +68,7 @@ class FeatureClass:
         else:
             self._nb_channels = 4
 
-        # CCTV sound event classes. Keep this aligned with Dataset/spatial/*.csv class_index.
+        # CCTV sound event classes. Keep this aligned with Dataset/spatial-mic-array/*.csv class_index.
         self._unique_classes = {
             'breaking': 0,
             'burst': 1,

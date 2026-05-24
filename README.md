@@ -6,8 +6,8 @@
 Prepare the spatial CCTV dataset under `Dataset/`. The current SELDnet adapter expects:
 
 ```text
-Dataset/spatial/train.csv
-Dataset/spatial/test.csv
+Dataset/spatial-mic-array/train.csv
+Dataset/spatial-mic-array/test.csv
 Dataset/spatial-mic-array/seldnet/wav_ov1_split1_0db/*.wav
 ```
 
