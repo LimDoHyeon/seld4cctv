@@ -33,6 +33,7 @@ def get_params(argv):
         # Distributed training
         distributed_strategy='auto', # 'auto', 'mirrored', or 'off'
         distributed_devices=None,    # Example: ['/gpu:0', '/gpu:1']; None uses all visible GPUs
+        save_checkpoints=True,
 
         # Weights & Biases logging
         use_wandb=True,

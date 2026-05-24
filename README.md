@@ -29,5 +29,7 @@ Training uses TensorFlow `MirroredStrategy` automatically when more than one GPU
 CUDA_VISIBLE_DEVICES=0,1 python seld.py
 ```
 
+Training checkpoints are saved under `seld-net/models/` as `<run_name>_best.keras` and `<run_name>_last.keras`.
+
 Generated features, labels, models, and dataset files are ignored by git.
 Extracted feature and label files are organized under class-name subdirectories.

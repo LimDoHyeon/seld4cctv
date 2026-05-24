@@ -191,13 +191,19 @@ def main(argv):
         int(params['cnn_3d']), job_id
     )
     unique_name = os.path.join(model_dir, unique_name)
+    best_model_path = '{}_best.keras'.format(unique_name)
+    last_model_path = '{}_last.keras'.format(unique_name)
     print("unique_name: {}\n".format(unique_name))
+    print("best checkpoint: {}".format(best_model_path))
+    print("last checkpoint: {}\n".format(last_model_path))
     wandb_run = init_wandb(params, job_id, unique_name)
     strategy = get_distribution_strategy(params)
     if wandb_run:
         wandb_run.config.update({
             'distribution_strategy': strategy.__class__.__name__,
             'num_replicas_in_sync': strategy.num_replicas_in_sync,
+            'best_checkpoint_path': best_model_path,
+            'last_checkpoint_path': last_model_path,
         }, allow_val_change=True)
 
     data_gen_train = cls_data_generator.DataGenerator(
@@ -300,11 +306,14 @@ def main(argv):
         plot_functions(unique_name, tr_loss, val_loss, sed_loss, doa_loss, epoch_metric_loss)
 
         patience_cnt += 1
+        if params.get('save_checkpoints', True):
+            model.save(last_model_path)
         if epoch_metric_loss[epoch_cnt] < best_metric:
             best_metric = epoch_metric_loss[epoch_cnt]
             best_conf_mat = conf_mat
             best_epoch = epoch_cnt
-            model.save('{}_model.h5'.format(unique_name))
+            if params.get('save_checkpoints', True):
+                model.save(best_model_path)
             patience_cnt = 0
 
         if wandb_run:
@@ -347,6 +356,8 @@ def main(argv):
     print('best_conf_mat : {}'.format(best_conf_mat))
     print('best_conf_mat_diag : {}'.format(np.diag(best_conf_mat)))
     print('saved model for the best_epoch: {} with best_metric: {},  '.format(best_epoch, best_metric))
+    print('best checkpoint: {}'.format(best_model_path))
+    print('last checkpoint: {}'.format(last_model_path))
     print('DOA Metrics: doa_loss_gt: {}, doa_loss_pred: {}, good_pks_ratio: {}'.format(
         doa_loss[best_epoch, 1], doa_loss[best_epoch, 2], doa_loss[best_epoch, 5] / float(sed_gt.shape[0])))
     print('SED Metrics: F1_overall: {}, ER_overall: {}'.format(sed_loss[best_epoch, 1], sed_loss[best_epoch, 0]))
@@ -357,6 +368,8 @@ def main(argv):
         wandb_run.summary['best_sed_f1_overall'] = sed_loss[best_epoch, 1]
         wandb_run.summary['best_sed_er_overall'] = sed_loss[best_epoch, 0]
         wandb_run.summary['best_doa_error_gt'] = doa_loss[best_epoch, 1]
+        wandb_run.summary['best_checkpoint_path'] = best_model_path
+        wandb_run.summary['last_checkpoint_path'] = last_model_path
         wandb_run.finish()
 
 
