@@ -78,9 +78,18 @@ class DataGenerator(object):
         return self._nb_total_batches
 
     def _get_label_filenames_sizes(self):
-        for filename in os.listdir(self._label_dir):
-            if self._datagen_mode in filename:
-                self._filenames_list.append(filename)
+        for root, dirs, files in os.walk(self._label_dir):
+            dirs.sort()
+            for filename in sorted(files):
+                if not filename.endswith('.npy'):
+                    continue
+                filename = os.path.relpath(os.path.join(root, filename), self._label_dir)
+                if self._datagen_mode in filename:
+                    self._filenames_list.append(filename)
+
+        if not self._filenames_list:
+            print('ERROR: No {} label files found in {}'.format(self._datagen_mode, self._label_dir))
+            exit()
 
         temp_feat = np.load(os.path.join(self._feat_dir, self._filenames_list[0]))
         self._nb_frames_file = temp_feat.shape[0]
@@ -220,4 +229,3 @@ class DataGenerator(object):
 
     def nb_frames_1s(self):
         return self._feat_cls.nb_frames_1s()
-

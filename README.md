@@ -24,3 +24,4 @@ python seld.py
 Training logs are sent to the `seld4cctv` Weights & Biases project by default. Set `WANDB_MODE=offline` or `use_wandb=False` in `seld-net/parameter.py` to disable online logging.
 
 Generated features, labels, models, and dataset files are ignored by git.
+Extracted feature and label files are organized under class-name subdirectories.

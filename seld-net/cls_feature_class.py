@@ -151,10 +151,13 @@ class FeatureClass:
     def _extract_spectrogram_from_manifest_row(self, row):
         audio_path = self._resolve_manifest_path(row['seldnet_wav_path'])
         audio_filename = os.path.basename(row['seldnet_wav_path'])
+        class_name = row['class_name']
         audio_in, fs = self._load_audio(audio_path)
         audio_spec = self._spectrogram(audio_in)
         print(audio_spec.shape)
-        np.save(os.path.join(self._feat_dir, audio_filename), audio_spec.reshape(self._max_frames, -1))
+        class_feat_dir = os.path.join(self._feat_dir, class_name)
+        utils.create_folder(class_feat_dir)
+        np.save(os.path.join(class_feat_dir, audio_filename), audio_spec.reshape(self._max_frames, -1))
 
     # OUTPUT LABELS
     def _resolve_manifest_path(self, path):
@@ -191,6 +194,14 @@ class FeatureClass:
             'ang_vel': list(),
             'dist': [float(row['distance_m'])]
         }
+
+    @staticmethod
+    def _iter_relative_npy_files(folder):
+        for root, dirs, files in os.walk(folder):
+            dirs.sort()
+            for file_name in sorted(files):
+                if file_name.endswith('.npy'):
+                    yield os.path.relpath(os.path.join(root, file_name), folder)
 
     def _read_desc_file(self, desc_filename):
         desc_file = {
@@ -369,7 +380,7 @@ class FeatureClass:
             se_label[start_frame:end_frame + 1, self._unique_classes[se_class]] = 1
         return se_label
 
-    def _get_labels_for_file(self, label_filename, _desc_file):
+    def _get_labels_for_file(self, label_filename, _desc_file, sub_dir=None):
         label_mat = None
         if self._mode == 'regr':
             se_label = self._get_se_labels(_desc_file)
@@ -378,7 +389,9 @@ class FeatureClass:
         else:
             print("The supported modes are 'regr', you provided {}".format(self._mode))
         print(label_mat.shape)
-        np.save(os.path.join(self._label_dir, label_filename), label_mat)
+        target_dir = self._label_dir if sub_dir is None else os.path.join(self._label_dir, sub_dir)
+        utils.create_folder(target_dir)
+        np.save(os.path.join(target_dir, label_filename), label_mat)
 
     # ------------------------------- EXTRACT FEATURE AND PREPROCESS IT -------------------------------
     def extract_all_feature(self, extra=''):
@@ -415,7 +428,7 @@ class FeatureClass:
 
         spec_scaler = preprocessing.StandardScaler()
         train_cnt = 0
-        for file_cnt, file_name in enumerate(os.listdir(self._feat_dir)):
+        for file_cnt, file_name in enumerate(self._iter_relative_npy_files(self._feat_dir)):
             if 'train' in file_name:
                 print(file_cnt, train_cnt, file_name)
                 feat_file = np.load(os.path.join(self._feat_dir, file_name))
@@ -429,15 +442,17 @@ class FeatureClass:
 
         print('Normalizing feature files:')
         # spec_scaler = joblib.load(normalized_features_wts_file) #load weights again using this command
-        for file_cnt, file_name in enumerate(os.listdir(self._feat_dir)):
-                print(file_cnt, file_name)
-                feat_file = np.load(os.path.join(self._feat_dir, file_name))
-                feat_file = spec_scaler.transform(np.concatenate((np.abs(feat_file), np.angle(feat_file)), axis=1))
-                np.save(
-                    os.path.join(self._feat_dir_norm, file_name),
-                    feat_file
-                )
-                del feat_file
+        for file_cnt, file_name in enumerate(self._iter_relative_npy_files(self._feat_dir)):
+            print(file_cnt, file_name)
+            feat_file = np.load(os.path.join(self._feat_dir, file_name))
+            feat_file = spec_scaler.transform(np.concatenate((np.abs(feat_file), np.angle(feat_file)), axis=1))
+            target_file = os.path.join(self._feat_dir_norm, file_name)
+            utils.create_folder(os.path.dirname(target_file))
+            np.save(
+                target_file,
+                feat_file
+            )
+            del feat_file
         print('normalized files written to {} folder and the scaler to {}'.format(
             self._feat_dir_norm, normalized_features_wts_file))
 
@@ -455,15 +470,17 @@ class FeatureClass:
         spec_scaler = joblib.load(normalized_features_wts_file)
         print('Normalizing feature files:')
         # spec_scaler = joblib.load(normalized_features_wts_file) #load weights again using this command
-        for file_cnt, file_name in enumerate(os.listdir(self._feat_dir)):
-                print(file_cnt, file_name)
-                feat_file = np.load(os.path.join(self._feat_dir, file_name))
-                feat_file = spec_scaler.transform(np.concatenate((np.abs(feat_file), np.angle(feat_file)), axis=1))
-                np.save(
-                    os.path.join(self._feat_dir_norm, file_name),
-                    feat_file
-                )
-                del feat_file
+        for file_cnt, file_name in enumerate(self._iter_relative_npy_files(self._feat_dir)):
+            print(file_cnt, file_name)
+            feat_file = np.load(os.path.join(self._feat_dir, file_name))
+            feat_file = spec_scaler.transform(np.concatenate((np.abs(feat_file), np.angle(feat_file)), axis=1))
+            target_file = os.path.join(self._feat_dir_norm, file_name)
+            utils.create_folder(os.path.dirname(target_file))
+            np.save(
+                target_file,
+                feat_file
+            )
+            del feat_file
         print('normalized files written to {} folder and the scaler to {}'.format(
             self._feat_dir_norm, normalized_features_wts_file))
 
@@ -483,7 +500,7 @@ class FeatureClass:
                 wav_filename = os.path.basename(row['seldnet_wav_path'])
                 print('file_cnt {}, file_name {}'.format(file_cnt, wav_filename))
                 desc_file = self._manifest_row_to_desc_file(row)
-                self._get_labels_for_file(wav_filename, desc_file)
+                self._get_labels_for_file(wav_filename, desc_file, sub_dir=row['class_name'])
             return
 
         for file_cnt, file_name in enumerate(os.listdir(self._desc_dir)):
