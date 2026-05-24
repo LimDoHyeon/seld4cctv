@@ -30,6 +30,12 @@ def get_params(argv):
         xyz_def_zero=True,          # Use default DOA Cartesian value x,y,z = 0,0,0
         nb_epochs=1000,             # Train for maximum epochs
 
+        # Weights & Biases logging
+        use_wandb=True,
+        wandb_project='seld4cctv',
+        wandb_entity=None,
+        wandb_mode=None,            # Set to 'offline' or 'disabled' if needed
+
         # Not important
         mode='regr',        # Only regression ('regr') supported as of now
         nb_cnn3d_filt=32,   # For future. Not relevant for now

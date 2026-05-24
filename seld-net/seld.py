@@ -16,6 +16,30 @@ from IPython import embed
 plot.switch_backend('agg')
 
 
+def init_wandb(params, job_id, run_name):
+    if not params.get('use_wandb', False):
+        return None
+
+    try:
+        import wandb
+    except ImportError as exc:
+        raise ImportError(
+            'W&B logging is enabled, but wandb is not installed. '
+            'Install it with `pip install wandb` or set use_wandb=False in parameter.py.'
+        ) from exc
+
+    wandb_mode = params.get('wandb_mode')
+    if wandb_mode:
+        os.environ['WANDB_MODE'] = wandb_mode
+
+    return wandb.init(
+        project=params.get('wandb_project') or 'seld4cctv',
+        entity=params.get('wandb_entity'),
+        name=os.path.basename(run_name),
+        config=dict(params, job_id=job_id),
+    )
+
+
 def collect_test_labels(_data_gen_test, _data_out, classification_mode, quick_test):
     # Collecting ground truth for test data
     nb_batch = 2 if quick_test else _data_gen_test.get_total_batches_in_data()
@@ -95,6 +119,7 @@ def main(argv):
     )
     unique_name = os.path.join(model_dir, unique_name)
     print("unique_name: {}\n".format(unique_name))
+    wandb_run = init_wandb(params, job_id, unique_name)
 
     data_gen_train = cls_data_generator.DataGenerator(
         dataset=params['dataset'], ov=params['overlap'], split=params['split'], db=params['db'], nfft=params['nfft'],
@@ -195,6 +220,26 @@ def main(argv):
             model.save('{}_model.h5'.format(unique_name))
             patience_cnt = 0
 
+        if wandb_run:
+            wandb_run.log(
+                {
+                    'epoch': epoch_cnt,
+                    'train/loss': tr_loss[epoch_cnt],
+                    'val/loss': val_loss[epoch_cnt],
+                    'sed/er_overall': sed_loss[epoch_cnt, 0],
+                    'sed/f1_overall': sed_loss[epoch_cnt, 1],
+                    'doa/avg_accuracy': doa_loss[epoch_cnt, 0],
+                    'doa/error_gt': doa_loss[epoch_cnt, 1],
+                    'doa/error_pred': doa_loss[epoch_cnt, 2],
+                    'doa/good_frame_count': doa_loss[epoch_cnt, 5],
+                    'doa/good_pks_ratio': doa_loss[epoch_cnt, 5] / float(sed_gt.shape[0]),
+                    'seld/error_metric': epoch_metric_loss[epoch_cnt],
+                    'seld/best_error_metric': best_metric,
+                    'seld/best_epoch': best_epoch,
+                },
+                step=epoch_cnt,
+            )
+
         print(
             'epoch_cnt: %d, time: %.2fs, tr_loss: %.2f, val_loss: %.2f, '
             'F1_overall: %.2f, ER_overall: %.2f, '
@@ -217,6 +262,13 @@ def main(argv):
         doa_loss[best_epoch, 1], doa_loss[best_epoch, 2], doa_loss[best_epoch, 5] / float(sed_gt.shape[0])))
     print('SED Metrics: F1_overall: {}, ER_overall: {}'.format(sed_loss[best_epoch, 1], sed_loss[best_epoch, 0]))
     print('unique_name: {} '.format(unique_name))
+    if wandb_run:
+        wandb_run.summary['best_epoch'] = best_epoch
+        wandb_run.summary['best_error_metric'] = best_metric
+        wandb_run.summary['best_sed_f1_overall'] = sed_loss[best_epoch, 1]
+        wandb_run.summary['best_sed_er_overall'] = sed_loss[best_epoch, 0]
+        wandb_run.summary['best_doa_error_gt'] = doa_loss[best_epoch, 1]
+        wandb_run.finish()
 
 
 if __name__ == "__main__":
