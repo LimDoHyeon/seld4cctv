@@ -26,7 +26,14 @@ def get_params(argv):
         pool_size=[8, 8, 2],        # CNN pooling, length of list = number of CNN layers, list value = pooling per layer
         rnn_size=[128, 128],        # RNN contents, length of list = number of layers, list value = number of nodes
         fnn_size=[128],             # FNN contents, length of list = number of layers, list value = number of nodes
-        loss_weights=[1., 50.],     # [sed, doa] weight for scaling the DNN outputs
+        loss_weights=[0.1, 50.],    # [sed, doa] weight for scaling the DNN outputs
+        metric_weights=[0.025, 0.025, 0.75, 0.20],  # [sed_er, sed_f1, doa_error, doa_recall]
+        learning_rate=1e-4,         # Adam learning rate
+        min_learning_rate=1e-6,     # Lower bound for manual LR reduction
+        clipnorm=1.0,               # Gradient clipping norm. Set None to disable.
+        min_delta=1e-4,             # Minimum validation metric improvement
+        lr_patience=3,              # Reduce LR after this many non-improving validations
+        lr_factor=0.5,              # LR reduction factor
         xyz_def_zero=True,          # Use default DOA Cartesian value x,y,z = 0,0,0
         nb_epochs=1000,             # Train for maximum epochs
         validation_interval=10,      # Run validation every N epochs.

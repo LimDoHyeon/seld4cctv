@@ -13,7 +13,7 @@ import parameter
 import utils
 import time
 import tensorflow as tf
-from tensorflow.keras.callbacks import Callback
+from tensorflow.keras.callbacks import Callback, TerminateOnNaN
 from IPython import embed
 from tqdm import tqdm
 plot.switch_backend('agg')
@@ -81,6 +81,34 @@ def should_run_validation(epoch_cnt, nb_epoch, params):
         return True
     interval = max(1, int(params.get('validation_interval', 1)))
     return (epoch_cnt + 1) % interval == 0
+
+
+def is_finite(value):
+    return value is not None and np.isfinite(value)
+
+
+def safe_seld_metric(sed_values, doa_values, doa_frame_count, weights):
+    doa_error = np.clip(doa_values[1] / 2.0, -1.0, 1.0)
+    good_pks_ratio = doa_values[5] / float(doa_frame_count)
+    values = np.array([
+        sed_values[0],
+        1 - sed_values[1],
+        2 * np.arcsin(doa_error) / np.pi,
+        1 - good_pks_ratio
+    ])
+    if not np.all(np.isfinite(values)):
+        return np.nan
+    weights = np.asarray(weights, dtype=np.float64)
+    weights = weights / np.sum(weights)
+    return np.sum(values * weights)
+
+
+def get_optimizer_lr(optimizer):
+    return float(tf.keras.backend.get_value(optimizer.learning_rate))
+
+
+def set_optimizer_lr(optimizer, value):
+    optimizer.learning_rate.assign(value)
 
 
 class TqdmFitProgress(Callback):
@@ -246,10 +274,16 @@ def main(argv):
         'MODEL:\n'
         '\tdropout_rate: {}\n'
         '\tCNN: nb_cnn_filt: {}, pool_size{}\n'
-        '\trnn_size: {}, fnn_size: {}\n'.format(
+        '\trnn_size: {}, fnn_size: {}\n'
+        '\toptimizer: Adam, learning_rate: {}, clipnorm: {}\n'
+        '\tloss_weights: {}\n'
+        '\tmetric_weights: {}\n'
+        '\tlr_patience: {}, lr_factor: {}, min_learning_rate: {}\n'.format(
             params['dropout_rate'],
             params['nb_cnn3d_filt'] if params['cnn_3d'] else params['nb_cnn2d_filt'], params['pool_size'],
-            params['rnn_size'], params['fnn_size']
+            params['rnn_size'], params['fnn_size'],
+            params['learning_rate'], params['clipnorm'], params['loss_weights'], params['metric_weights'],
+            params['lr_patience'], params['lr_factor'], params['min_learning_rate']
         )
     )
 
@@ -257,12 +291,14 @@ def main(argv):
         model = keras_model.get_model(data_in=data_in, data_out=data_out, dropout_rate=params['dropout_rate'],
                                       nb_cnn2d_filt=params['nb_cnn2d_filt'], pool_size=params['pool_size'],
                                       rnn_size=params['rnn_size'], fnn_size=params['fnn_size'],
-                                      classification_mode=params['mode'], weights=params['loss_weights'])
+                                      classification_mode=params['mode'], weights=params['loss_weights'],
+                                      learning_rate=params['learning_rate'], clipnorm=params['clipnorm'])
     best_metric = 99999
     conf_mat = None
     best_conf_mat = None
     best_epoch = -1
     patience_cnt = 0
+    lr_wait = 0
     epoch_metric_loss = np.full(params['nb_epochs'], np.nan)
     tr_loss = np.zeros(params['nb_epochs'])
     val_loss = np.full(params['nb_epochs'], np.nan)
@@ -279,7 +315,10 @@ def main(argv):
             steps_per_epoch=train_steps,
             epochs=1,
             verbose=0,
-            callbacks=[TqdmFitProgress(epoch_cnt, nb_epoch, train_steps, val_steps if run_validation else 0)]
+            callbacks=[
+                TqdmFitProgress(epoch_cnt, nb_epoch, train_steps, val_steps if run_validation else 0),
+                TerminateOnNaN()
+            ]
         )
         if run_validation:
             fit_kwargs['validation_data'] = data_gen_val.generate()
@@ -312,11 +351,8 @@ def main(argv):
                     doa_loss[epoch_cnt, :], conf_mat = evaluation_metrics.compute_doa_scores_regr_xyz(
                         doa_pred, doa_gt, sed_pred, sed_gt)
 
-                epoch_metric_loss[epoch_cnt] = np.mean([
-                    sed_loss[epoch_cnt, 0],
-                    1-sed_loss[epoch_cnt, 1],
-                    2*np.arcsin(doa_loss[epoch_cnt, 1]/2.0)/np.pi,
-                    1 - (doa_loss[epoch_cnt, 5] / float(doa_gt.shape[0]))]
+                epoch_metric_loss[epoch_cnt] = safe_seld_metric(
+                    sed_loss[epoch_cnt, :], doa_loss[epoch_cnt, :], doa_gt.shape[0], params['metric_weights']
                 )
         elif epoch_cnt > 0:
             val_loss[epoch_cnt] = val_loss[epoch_cnt - 1]
@@ -325,16 +361,38 @@ def main(argv):
             epoch_metric_loss[epoch_cnt] = epoch_metric_loss[epoch_cnt - 1]
         plot_functions(unique_name, tr_loss, val_loss, sed_loss, doa_loss, epoch_metric_loss)
 
+        if not is_finite(tr_loss[epoch_cnt]):
+            print('Stopping because train loss became non-finite at epoch {}'.format(epoch_cnt))
+            break
+        if run_validation and not is_finite(epoch_metric_loss[epoch_cnt]):
+            print('Stopping because validation metric became non-finite at epoch {}'.format(epoch_cnt))
+            break
+
         patience_cnt += 1 if run_validation else 0
         if params.get('save_checkpoints', True):
             model.save(last_model_path)
-        if run_validation and epoch_metric_loss[epoch_cnt] < best_metric:
+        improved = (
+            run_validation
+            and is_finite(epoch_metric_loss[epoch_cnt])
+            and epoch_metric_loss[epoch_cnt] < best_metric - params.get('min_delta', 0.0)
+        )
+        if improved:
             best_metric = epoch_metric_loss[epoch_cnt]
             best_conf_mat = conf_mat
             best_epoch = epoch_cnt
             if params.get('save_checkpoints', True):
                 model.save(best_model_path)
             patience_cnt = 0
+            lr_wait = 0
+        elif run_validation:
+            lr_wait += 1
+            if lr_wait >= params.get('lr_patience', 3):
+                old_lr = get_optimizer_lr(model.optimizer)
+                new_lr = max(old_lr * params.get('lr_factor', 0.5), params.get('min_learning_rate', 1e-6))
+                if new_lr < old_lr:
+                    set_optimizer_lr(model.optimizer, new_lr)
+                    print('Reducing learning rate from {:.6g} to {:.6g}'.format(old_lr, new_lr))
+                lr_wait = 0
 
         if wandb_run:
             wandb_log = {
@@ -343,6 +401,7 @@ def main(argv):
                 'train/loss': tr_loss[epoch_cnt],
                 'seld/best_error_metric': best_metric,
                 'seld/best_epoch': best_epoch,
+                'train/learning_rate': get_optimizer_lr(model.optimizer),
             }
             if run_validation:
                 wandb_log.update({

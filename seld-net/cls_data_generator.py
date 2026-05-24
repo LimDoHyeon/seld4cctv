@@ -94,6 +94,13 @@ class DataGenerator(object):
                     filenames.append(filename)
         return filenames
 
+    @staticmethod
+    def _load_npy_checked(path):
+        data = np.load(path)
+        if not np.all(np.isfinite(data)):
+            raise ValueError('Non-finite values found in {}'.format(path))
+        return data
+
     def _get_label_filenames_sizes(self):
         self._filenames_list = self._collect_label_files(self._label_dir, self._datagen_mode)
 
@@ -107,11 +114,11 @@ class DataGenerator(object):
             print('ERROR: No {} label files found in {}'.format(self._datagen_mode, self._label_dir))
             exit()
 
-        temp_feat = np.load(os.path.join(self._feat_dir, self._filenames_list[0]))
+        temp_feat = self._load_npy_checked(os.path.join(self._feat_dir, self._filenames_list[0]))
         self._nb_frames_file = temp_feat.shape[0]
         self._feat_len = temp_feat.shape[1] // self._2_nb_ch
 
-        temp_label = np.load(os.path.join(self._label_dir, self._filenames_list[0]))
+        temp_label = self._load_npy_checked(os.path.join(self._label_dir, self._filenames_list[0]))
         self._label_len = temp_label.shape[-1]
         self._doa_len = (self._label_len - self._nb_classes)//self._nb_classes
         return
@@ -138,8 +145,8 @@ class DataGenerator(object):
                 # load feat and label to circular buffer. Always maintain atleast one batch worth feat and label in the
                 # circular buffer. If not keep refilling it.
                 while len(self._circ_buf_feat) < self._batch_seq_len:
-                    temp_feat = np.load(os.path.join(self._feat_dir, self._filenames_list[file_cnt]))
-                    temp_label = np.load(os.path.join(self._label_dir, self._filenames_list[file_cnt]))
+                    temp_feat = self._load_npy_checked(os.path.join(self._feat_dir, self._filenames_list[file_cnt]))
+                    temp_label = self._load_npy_checked(os.path.join(self._label_dir, self._filenames_list[file_cnt]))
 
                     for row_cnt, row in enumerate(temp_feat):
                         self._circ_buf_feat.append(row)
