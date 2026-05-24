@@ -11,6 +11,7 @@ from sklearn import preprocessing
 import joblib
 from IPython import embed
 import matplotlib.pyplot as plot
+from tqdm import tqdm
 plot.switch_backend('agg')
 
 
@@ -145,7 +146,6 @@ class FeatureClass:
     def _extract_spectrogram_for_file(self, audio_filename):
         audio_in, fs = self._load_audio(os.path.join(self._aud_dir, audio_filename))
         audio_spec = self._spectrogram(audio_in)
-        print(audio_spec.shape)
         np.save(os.path.join(self._feat_dir, audio_filename), audio_spec.reshape(self._max_frames, -1))
 
     def _extract_spectrogram_from_manifest_row(self, row):
@@ -154,7 +154,6 @@ class FeatureClass:
         class_name = row['class_name']
         audio_in, fs = self._load_audio(audio_path)
         audio_spec = self._spectrogram(audio_in)
-        print(audio_spec.shape)
         class_feat_dir = os.path.join(self._feat_dir, class_name)
         utils.create_folder(class_feat_dir)
         np.save(os.path.join(class_feat_dir, audio_filename), audio_spec.reshape(self._max_frames, -1))
@@ -388,7 +387,6 @@ class FeatureClass:
             label_mat = np.concatenate((se_label, doa_label), axis=1)
         else:
             print("The supported modes are 'regr', you provided {}".format(self._mode))
-        print(label_mat.shape)
         target_dir = self._label_dir if sub_dir is None else os.path.join(self._label_dir, sub_dir)
         utils.create_folder(target_dir)
         np.save(os.path.join(target_dir, label_filename), label_mat)
@@ -399,19 +397,14 @@ class FeatureClass:
         self._feat_dir = self.get_unnormalized_feat_dir(extra)
         utils.create_folder(self._feat_dir)
 
-        # extraction starts
-        print('Extracting spectrogram:')
-        print('\t\taud_dir {}\n\t\tdesc_dir {}\n\t\tfeat_dir {}'.format(
-            self._aud_dir, self._desc_dir, self._feat_dir))
-
         if self._manifest_paths:
-            for file_cnt, row in enumerate(self._read_manifest_rows()):
-                print('file_cnt {}, file_name {}'.format(file_cnt, os.path.basename(row['seldnet_wav_path'])))
+            rows = self._read_manifest_rows()
+            for row in tqdm(rows, desc='Extracting features', unit='file'):
                 self._extract_spectrogram_from_manifest_row(row)
             return
 
-        for file_cnt, file_name in enumerate(os.listdir(self._desc_dir)):
-            print('file_cnt {}, file_name {}'.format(file_cnt, file_name))
+        desc_files = sorted(os.listdir(self._desc_dir))
+        for file_name in tqdm(desc_files, desc='Extracting features', unit='file'):
             wav_filename = '{}.wav'.format(file_name.split('.')[0])
             self._extract_spectrogram_for_file(wav_filename)
 
@@ -422,28 +415,20 @@ class FeatureClass:
         utils.create_folder(self._feat_dir_norm)
         normalized_features_wts_file = self.get_normalized_wts_file(extra)
 
-        # pre-processing starts
-        print('Estimating weights for normalizing feature files:')
-        print('\t\tfeat_dir {}'.format(self._feat_dir))
-
         spec_scaler = preprocessing.StandardScaler()
-        train_cnt = 0
-        for file_cnt, file_name in enumerate(self._iter_relative_npy_files(self._feat_dir)):
-            if 'train' in file_name:
-                print(file_cnt, train_cnt, file_name)
-                feat_file = np.load(os.path.join(self._feat_dir, file_name))
-                spec_scaler.partial_fit(np.concatenate((np.abs(feat_file), np.angle(feat_file)), axis=1))
-                del feat_file
-                train_cnt += 1
+        feat_files = list(self._iter_relative_npy_files(self._feat_dir))
+        train_files = [file_name for file_name in feat_files if 'train' in file_name]
+        for file_name in tqdm(train_files, desc='Fitting feature scaler', unit='file'):
+            feat_file = np.load(os.path.join(self._feat_dir, file_name))
+            spec_scaler.partial_fit(np.concatenate((np.abs(feat_file), np.angle(feat_file)), axis=1))
+            del feat_file
         joblib.dump(
             spec_scaler,
             normalized_features_wts_file
         )
 
-        print('Normalizing feature files:')
         # spec_scaler = joblib.load(normalized_features_wts_file) #load weights again using this command
-        for file_cnt, file_name in enumerate(self._iter_relative_npy_files(self._feat_dir)):
-            print(file_cnt, file_name)
+        for file_name in tqdm(feat_files, desc='Normalizing features', unit='file'):
             feat_file = np.load(os.path.join(self._feat_dir, file_name))
             feat_file = spec_scaler.transform(np.concatenate((np.abs(feat_file), np.angle(feat_file)), axis=1))
             target_file = os.path.join(self._feat_dir_norm, file_name)
@@ -453,8 +438,6 @@ class FeatureClass:
                 feat_file
             )
             del feat_file
-        print('normalized files written to {} folder and the scaler to {}'.format(
-            self._feat_dir_norm, normalized_features_wts_file))
 
     def normalize_features(self, extraname=''):
         # Setting up folders and filenames
@@ -463,15 +446,10 @@ class FeatureClass:
         utils.create_folder(self._feat_dir_norm)
         normalized_features_wts_file = self.get_normalized_wts_file()
 
-        # pre-processing starts
-        print('Estimating weights for normalizing feature files:')
-        print('\t\tfeat_dir {}'.format(self._feat_dir))
-
         spec_scaler = joblib.load(normalized_features_wts_file)
-        print('Normalizing feature files:')
         # spec_scaler = joblib.load(normalized_features_wts_file) #load weights again using this command
-        for file_cnt, file_name in enumerate(self._iter_relative_npy_files(self._feat_dir)):
-            print(file_cnt, file_name)
+        feat_files = list(self._iter_relative_npy_files(self._feat_dir))
+        for file_name in tqdm(feat_files, desc='Normalizing features', unit='file'):
             feat_file = np.load(os.path.join(self._feat_dir, file_name))
             feat_file = spec_scaler.transform(np.concatenate((np.abs(feat_file), np.angle(feat_file)), axis=1))
             target_file = os.path.join(self._feat_dir_norm, file_name)
@@ -481,8 +459,6 @@ class FeatureClass:
                 feat_file
             )
             del feat_file
-        print('normalized files written to {} folder and the scaler to {}'.format(
-            self._feat_dir_norm, normalized_features_wts_file))
 
     # ------------------------------- EXTRACT LABELS AND PREPROCESS IT -------------------------------
     def extract_all_labels(self, mode='regr', weakness=0, extra=''):
@@ -490,21 +466,18 @@ class FeatureClass:
         self._mode = mode
         self._weakness = weakness
 
-        print('Extracting spectrogram and labels:')
-        print('\t\taud_dir {}\n\t\tdesc_dir {}\n\t\tlabel_dir {}'.format(
-            self._aud_dir, self._desc_dir, self._label_dir))
         utils.create_folder(self._label_dir)
 
         if self._manifest_paths:
-            for file_cnt, row in enumerate(self._read_manifest_rows()):
+            rows = self._read_manifest_rows()
+            for row in tqdm(rows, desc='Extracting labels', unit='file'):
                 wav_filename = os.path.basename(row['seldnet_wav_path'])
-                print('file_cnt {}, file_name {}'.format(file_cnt, wav_filename))
                 desc_file = self._manifest_row_to_desc_file(row)
                 self._get_labels_for_file(wav_filename, desc_file, sub_dir=row['class_name'])
             return
 
-        for file_cnt, file_name in enumerate(os.listdir(self._desc_dir)):
-            print('file_cnt {}, file_name {}'.format(file_cnt, file_name))
+        desc_files = sorted(os.listdir(self._desc_dir))
+        for file_name in tqdm(desc_files, desc='Extracting labels', unit='file'):
             wav_filename = '{}.wav'.format(file_name.split('.')[0])
             desc_file = self._read_desc_file(file_name)
             self._get_labels_for_file(wav_filename, desc_file)
