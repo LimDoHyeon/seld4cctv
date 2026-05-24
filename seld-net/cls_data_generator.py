@@ -171,10 +171,10 @@ class DataGenerator(object):
                         x[no_ele_ind] = 0
                         y[no_ele_ind] = 0
 
-                    label = [
+                    label = (
                         label[:, :, :self._nb_classes],  # SED labels
                         np.concatenate((x, y), -1)       # DOA Cartesian labels
-                    ]
+                    )
                 else:
                     # Get Cartesian coordinates from azi/ele
                     azi_rad = label[:, :, self._nb_classes:2 * self._nb_classes] * np.pi / 180
@@ -192,10 +192,10 @@ class DataGenerator(object):
                         z[no_ele_ind] = 0
                         y[no_ele_ind] = 0
 
-                    label = [
+                    label = (
                         label[:, :, :self._nb_classes],  # SED labels
                         np.concatenate((x, y, z), -1)    # DOA Cartesian labels
-                         ]
+                    )
 
                 yield feat, label
 
