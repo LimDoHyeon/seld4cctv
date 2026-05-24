@@ -12,7 +12,9 @@ import keras_model
 import parameter
 import utils
 import time
+from tensorflow.keras.callbacks import Callback
 from IPython import embed
+from tqdm import tqdm
 plot.switch_backend('agg')
 
 
@@ -46,6 +48,49 @@ def history_last(history, candidates):
         if values:
             return values[-1]
     return None
+
+
+class TqdmFitProgress(Callback):
+    def __init__(self, epoch, total_epochs, train_steps, val_steps):
+        self._epoch = epoch
+        self._total_epochs = total_epochs
+        self._train_steps = train_steps
+        self._val_steps = val_steps
+        self._train_bar = None
+        self._val_bar = None
+
+    def set_model(self, model):
+        self.model = model
+
+    def set_params(self, params):
+        self.params = params
+
+    def on_train_begin(self, logs=None):
+        desc = 'Epoch {}/{} train'.format(self._epoch + 1, self._total_epochs)
+        self._train_bar = tqdm(total=self._train_steps, desc=desc, unit='batch')
+
+    def on_train_batch_end(self, batch, logs=None):
+        if self._train_bar:
+            self._train_bar.update(1)
+
+    def on_test_begin(self, logs=None):
+        if self._val_steps:
+            desc = 'Epoch {}/{} val'.format(self._epoch + 1, self._total_epochs)
+            self._val_bar = tqdm(total=self._val_steps, desc=desc, unit='batch')
+
+    def on_test_batch_end(self, batch, logs=None):
+        if self._val_bar:
+            self._val_bar.update(1)
+
+    def on_test_end(self, logs=None):
+        if self._val_bar:
+            self._val_bar.close()
+            self._val_bar = None
+
+    def on_train_end(self, logs=None):
+        if self._train_bar:
+            self._train_bar.close()
+            self._train_bar = None
 
 
 def collect_validation_labels(_data_gen_val, _data_out, classification_mode, quick_test):
@@ -186,13 +231,16 @@ def main(argv):
     nb_epoch = 2 if params['quick_test'] else params['nb_epochs']
     for epoch_cnt in range(nb_epoch):
         start = time.time()
+        train_steps = 2 if params['quick_test'] else data_gen_train.get_total_batches_in_data()
+        val_steps = 2 if params['quick_test'] else data_gen_val.get_total_batches_in_data()
         hist = model.fit(
             x=data_gen_train.generate(),
-            steps_per_epoch=2 if params['quick_test'] else data_gen_train.get_total_batches_in_data(),
+            steps_per_epoch=train_steps,
             validation_data=data_gen_val.generate(),
-            validation_steps=2 if params['quick_test'] else data_gen_val.get_total_batches_in_data(),
+            validation_steps=val_steps,
             epochs=1,
-            verbose=0
+            verbose=0,
+            callbacks=[TqdmFitProgress(epoch_cnt, nb_epoch, train_steps, val_steps)]
         )
         tr_loss[epoch_cnt] = hist.history.get('loss')[-1]
         val_loss[epoch_cnt] = hist.history.get('val_loss')[-1]
@@ -201,8 +249,8 @@ def main(argv):
 
         pred = model.predict(
             x=data_gen_val.generate(),
-            steps=2 if params['quick_test'] else data_gen_val.get_total_batches_in_data(),
-            verbose=2
+            steps=val_steps,
+            verbose=0
         )
         if params['mode'] == 'regr':
             sed_pred = evaluation_metrics.reshape_3Dto2D(pred[0]) > 0.5
