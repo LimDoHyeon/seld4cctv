@@ -14,9 +14,10 @@ class DataGenerator(object):
     def __init__(
             self, datagen_mode='train', dataset='ansim', ov=1, split=1, db=30, batch_size=32, seq_len=64,
             shuffle=True, nfft=512, classifier_mode='regr', weakness=0, cnn3d=False, xyz_def_zero=False, extra_name='',
-            azi_only=False
+            azi_only=False, fallback_datagen_mode=None
     ):
         self._datagen_mode = datagen_mode
+        self._fallback_datagen_mode = fallback_datagen_mode
         self._classifier_mode = classifier_mode
         self._batch_size = batch_size
         self._seq_len = seq_len
@@ -77,15 +78,30 @@ class DataGenerator(object):
     def get_total_batches_in_data(self):
         return self._nb_total_batches
 
-    def _get_label_filenames_sizes(self):
-        for root, dirs, files in os.walk(self._label_dir):
+    def get_datagen_mode(self):
+        return self._datagen_mode
+
+    @staticmethod
+    def _collect_label_files(label_dir, datagen_mode):
+        filenames = list()
+        for root, dirs, files in os.walk(label_dir):
             dirs.sort()
             for filename in sorted(files):
                 if not filename.endswith('.npy'):
                     continue
-                filename = os.path.relpath(os.path.join(root, filename), self._label_dir)
-                if self._datagen_mode in filename:
-                    self._filenames_list.append(filename)
+                filename = os.path.relpath(os.path.join(root, filename), label_dir)
+                if datagen_mode in filename:
+                    filenames.append(filename)
+        return filenames
+
+    def _get_label_filenames_sizes(self):
+        self._filenames_list = self._collect_label_files(self._label_dir, self._datagen_mode)
+
+        if not self._filenames_list and self._fallback_datagen_mode:
+            print('No {} label files found. Using {} files instead.'.format(
+                self._datagen_mode, self._fallback_datagen_mode))
+            self._datagen_mode = self._fallback_datagen_mode
+            self._filenames_list = self._collect_label_files(self._label_dir, self._datagen_mode)
 
         if not self._filenames_list:
             print('ERROR: No {} label files found in {}'.format(self._datagen_mode, self._label_dir))

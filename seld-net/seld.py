@@ -40,17 +40,25 @@ def init_wandb(params, job_id, run_name):
     )
 
 
-def collect_test_labels(_data_gen_test, _data_out, classification_mode, quick_test):
-    # Collecting ground truth for test data
-    nb_batch = 2 if quick_test else _data_gen_test.get_total_batches_in_data()
+def history_last(history, candidates):
+    for key in candidates:
+        values = history.get(key)
+        if values:
+            return values[-1]
+    return None
+
+
+def collect_validation_labels(_data_gen_val, _data_out, classification_mode, quick_test):
+    # Collecting ground truth for validation data
+    nb_batch = 2 if quick_test else _data_gen_val.get_total_batches_in_data()
 
     batch_size = _data_out[0][0]
     gt_sed = np.zeros((nb_batch * batch_size, _data_out[0][1], _data_out[0][2]))
     gt_doa = np.zeros((nb_batch * batch_size, _data_out[0][1], _data_out[1][2]))
 
-    print("nb_batch in test: {}".format(nb_batch))
+    print("nb_batch in validation: {}".format(nb_batch))
     cnt = 0
-    for tmp_feat, tmp_label in _data_gen_test.generate():
+    for tmp_feat, tmp_label in _data_gen_val.generate():
         gt_sed[cnt * batch_size:(cnt + 1) * batch_size, :, :] = tmp_label[0]
         gt_doa[cnt * batch_size:(cnt + 1) * batch_size, :, :] = tmp_label[1]
         cnt = cnt + 1
@@ -128,13 +136,6 @@ def main(argv):
         azi_only=params['azi_only']
     )
 
-    data_gen_test = cls_data_generator.DataGenerator(
-        dataset=params['dataset'], ov=params['overlap'], split=params['split'], db=params['db'], nfft=params['nfft'],
-        batch_size=params['batch_size'], seq_len=params['sequence_length'], classifier_mode=params['mode'],
-        weakness=params['weakness'], datagen_mode='test', cnn3d=params['cnn_3d'], xyz_def_zero=params['xyz_def_zero'],
-        azi_only=params['azi_only'], shuffle=False
-    )
-
     data_in, data_out = data_gen_train.get_data_sizes()
     print(
         'FEATURES:\n'
@@ -144,7 +145,16 @@ def main(argv):
         )
     )
 
-    gt = collect_test_labels(data_gen_test, data_out, params['mode'], params['quick_test'])
+    data_gen_val = cls_data_generator.DataGenerator(
+        dataset=params['dataset'], ov=params['overlap'], split=params['split'], db=params['db'], nfft=params['nfft'],
+        batch_size=params['batch_size'], seq_len=params['sequence_length'], classifier_mode=params['mode'],
+        weakness=params['weakness'], datagen_mode='val', fallback_datagen_mode='test', cnn3d=params['cnn_3d'],
+        xyz_def_zero=params['xyz_def_zero'], azi_only=params['azi_only'], shuffle=False
+    )
+    if wandb_run:
+        wandb_run.config.update({'validation_datagen_mode': data_gen_val.get_datagen_mode()}, allow_val_change=True)
+
+    gt = collect_validation_labels(data_gen_val, data_out, params['mode'], params['quick_test'])
     sed_gt = evaluation_metrics.reshape_3Dto2D(gt[0])
     doa_gt = evaluation_metrics.reshape_3Dto2D(gt[1])
 
@@ -179,24 +189,26 @@ def main(argv):
         hist = model.fit(
             x=data_gen_train.generate(),
             steps_per_epoch=2 if params['quick_test'] else data_gen_train.get_total_batches_in_data(),
-            validation_data=data_gen_test.generate(),
-            validation_steps=2 if params['quick_test'] else data_gen_test.get_total_batches_in_data(),
+            validation_data=data_gen_val.generate(),
+            validation_steps=2 if params['quick_test'] else data_gen_val.get_total_batches_in_data(),
             epochs=1,
             verbose=0
         )
         tr_loss[epoch_cnt] = hist.history.get('loss')[-1]
         val_loss[epoch_cnt] = hist.history.get('val_loss')[-1]
+        tr_acc = history_last(hist.history, ['sed_out_accuracy', 'sed_out_binary_accuracy', 'accuracy'])
+        val_acc = history_last(hist.history, ['val_sed_out_accuracy', 'val_sed_out_binary_accuracy', 'val_accuracy'])
 
         pred = model.predict(
-            x=data_gen_test.generate(),
-            steps=2 if params['quick_test'] else data_gen_test.get_total_batches_in_data(),
+            x=data_gen_val.generate(),
+            steps=2 if params['quick_test'] else data_gen_val.get_total_batches_in_data(),
             verbose=2
         )
         if params['mode'] == 'regr':
             sed_pred = evaluation_metrics.reshape_3Dto2D(pred[0]) > 0.5
             doa_pred = evaluation_metrics.reshape_3Dto2D(pred[1])
 
-            sed_loss[epoch_cnt, :] = evaluation_metrics.compute_sed_scores(sed_pred, sed_gt, data_gen_test.nb_frames_1s())
+            sed_loss[epoch_cnt, :] = evaluation_metrics.compute_sed_scores(sed_pred, sed_gt, data_gen_val.nb_frames_1s())
             if params['azi_only']:
                 doa_loss[epoch_cnt, :], conf_mat = evaluation_metrics.compute_doa_scores_regr_xy(doa_pred, doa_gt,
                                                                                                  sed_pred, sed_gt)
@@ -221,24 +233,26 @@ def main(argv):
             patience_cnt = 0
 
         if wandb_run:
-            wandb_run.log(
-                {
-                    'epoch': epoch_cnt,
-                    'train/loss': tr_loss[epoch_cnt],
-                    'val/loss': val_loss[epoch_cnt],
-                    'sed/er_overall': sed_loss[epoch_cnt, 0],
-                    'sed/f1_overall': sed_loss[epoch_cnt, 1],
-                    'doa/avg_accuracy': doa_loss[epoch_cnt, 0],
-                    'doa/error_gt': doa_loss[epoch_cnt, 1],
-                    'doa/error_pred': doa_loss[epoch_cnt, 2],
-                    'doa/good_frame_count': doa_loss[epoch_cnt, 5],
-                    'doa/good_pks_ratio': doa_loss[epoch_cnt, 5] / float(sed_gt.shape[0]),
-                    'seld/error_metric': epoch_metric_loss[epoch_cnt],
-                    'seld/best_error_metric': best_metric,
-                    'seld/best_epoch': best_epoch,
-                },
-                step=epoch_cnt,
-            )
+            wandb_log = {
+                'epoch': epoch_cnt,
+                'train/loss': tr_loss[epoch_cnt],
+                'val/loss': val_loss[epoch_cnt],
+                'sed/er_overall': sed_loss[epoch_cnt, 0],
+                'sed/f1_overall': sed_loss[epoch_cnt, 1],
+                'doa/avg_accuracy': doa_loss[epoch_cnt, 0],
+                'doa/error_gt': doa_loss[epoch_cnt, 1],
+                'doa/error_pred': doa_loss[epoch_cnt, 2],
+                'doa/good_frame_count': doa_loss[epoch_cnt, 5],
+                'doa/good_pks_ratio': doa_loss[epoch_cnt, 5] / float(sed_gt.shape[0]),
+                'seld/error_metric': epoch_metric_loss[epoch_cnt],
+                'seld/best_error_metric': best_metric,
+                'seld/best_epoch': best_epoch,
+            }
+            if tr_acc is not None:
+                wandb_log['train/accuracy'] = tr_acc
+            if val_acc is not None:
+                wandb_log['val/accuracy'] = val_acc
+            wandb_run.log(wandb_log, step=epoch_cnt)
 
         print(
             'epoch_cnt: %d, time: %.2fs, tr_loss: %.2f, val_loss: %.2f, '

@@ -62,7 +62,15 @@ def get_model(data_in, data_out, dropout_rate, nb_cnn2d_filt, pool_size,
     sed = Activation('sigmoid', name='sed_out')(sed)
 
     model = Model(inputs=spec_start, outputs=[sed, doa])
-    model.compile(optimizer=Adam(), loss=['binary_crossentropy', 'mse'], loss_weights=weights)
+    model.compile(
+        optimizer=Adam(),
+        loss=['binary_crossentropy', 'mse'],
+        loss_weights=weights,
+        metrics={
+            'sed_out': [tf.keras.metrics.BinaryAccuracy(name='accuracy')],
+            'doa_out': [tf.keras.metrics.MeanSquaredError(name='mse')],
+        }
+    )
 
     model.summary()
     return model
