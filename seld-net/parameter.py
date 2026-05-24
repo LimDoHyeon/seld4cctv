@@ -29,6 +29,7 @@ def get_params(argv):
         loss_weights=[1., 50.],     # [sed, doa] weight for scaling the DNN outputs
         xyz_def_zero=True,          # Use default DOA Cartesian value x,y,z = 0,0,0
         nb_epochs=1000,             # Train for maximum epochs
+        validation_interval=10,      # Run validation every N epochs.
 
         # Distributed training
         distributed_strategy='auto', # 'auto', 'mirrored', or 'off'

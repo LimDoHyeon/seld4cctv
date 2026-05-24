@@ -76,6 +76,13 @@ def history_last(history, candidates):
     return None
 
 
+def should_run_validation(epoch_cnt, nb_epoch, params):
+    if params['quick_test']:
+        return True
+    interval = max(1, int(params.get('validation_interval', 1)))
+    return (epoch_cnt + 1) % interval == 0
+
+
 class TqdmFitProgress(Callback):
     def __init__(self, epoch, total_epochs, train_steps, val_steps):
         self._epoch = epoch
@@ -256,59 +263,72 @@ def main(argv):
     best_conf_mat = None
     best_epoch = -1
     patience_cnt = 0
-    epoch_metric_loss = np.zeros(params['nb_epochs'])
+    epoch_metric_loss = np.full(params['nb_epochs'], np.nan)
     tr_loss = np.zeros(params['nb_epochs'])
-    val_loss = np.zeros(params['nb_epochs'])
-    doa_loss = np.zeros((params['nb_epochs'], 6))
-    sed_loss = np.zeros((params['nb_epochs'], 2))
+    val_loss = np.full(params['nb_epochs'], np.nan)
+    doa_loss = np.full((params['nb_epochs'], 6), np.nan)
+    sed_loss = np.full((params['nb_epochs'], 2), np.nan)
     nb_epoch = 2 if params['quick_test'] else params['nb_epochs']
     for epoch_cnt in range(nb_epoch):
         start = time.time()
         train_steps = 2 if params['quick_test'] else data_gen_train.get_total_batches_in_data()
         val_steps = 2 if params['quick_test'] else data_gen_val.get_total_batches_in_data()
-        hist = model.fit(
+        run_validation = should_run_validation(epoch_cnt, nb_epoch, params)
+        fit_kwargs = dict(
             x=data_gen_train.generate(),
             steps_per_epoch=train_steps,
-            validation_data=data_gen_val.generate(),
-            validation_steps=val_steps,
             epochs=1,
             verbose=0,
-            callbacks=[TqdmFitProgress(epoch_cnt, nb_epoch, train_steps, val_steps)]
+            callbacks=[TqdmFitProgress(epoch_cnt, nb_epoch, train_steps, val_steps if run_validation else 0)]
         )
+        if run_validation:
+            fit_kwargs['validation_data'] = data_gen_val.generate()
+            fit_kwargs['validation_steps'] = val_steps
+        hist = model.fit(**fit_kwargs)
         tr_loss[epoch_cnt] = hist.history.get('loss')[-1]
-        val_loss[epoch_cnt] = hist.history.get('val_loss')[-1]
+        if run_validation:
+            val_loss[epoch_cnt] = hist.history.get('val_loss')[-1]
         tr_acc = history_last(hist.history, ['sed_out_accuracy', 'sed_out_binary_accuracy', 'accuracy'])
-        val_acc = history_last(hist.history, ['val_sed_out_accuracy', 'val_sed_out_binary_accuracy', 'val_accuracy'])
+        val_acc = history_last(
+            hist.history, ['val_sed_out_accuracy', 'val_sed_out_binary_accuracy', 'val_accuracy']
+        ) if run_validation else None
 
-        pred = model.predict(
-            x=data_gen_val.generate(),
-            steps=val_steps,
-            verbose=0
-        )
-        if params['mode'] == 'regr':
-            sed_pred = evaluation_metrics.reshape_3Dto2D(pred[0]) > 0.5
-            doa_pred = evaluation_metrics.reshape_3Dto2D(pred[1])
-
-            sed_loss[epoch_cnt, :] = evaluation_metrics.compute_sed_scores(sed_pred, sed_gt, data_gen_val.nb_frames_1s())
-            if params['azi_only']:
-                doa_loss[epoch_cnt, :], conf_mat = evaluation_metrics.compute_doa_scores_regr_xy(doa_pred, doa_gt,
-                                                                                                 sed_pred, sed_gt)
-            else:
-                doa_loss[epoch_cnt, :], conf_mat = evaluation_metrics.compute_doa_scores_regr_xyz(doa_pred, doa_gt,
-                                                                                                  sed_pred, sed_gt)
-
-            epoch_metric_loss[epoch_cnt] = np.mean([
-                sed_loss[epoch_cnt, 0],
-                1-sed_loss[epoch_cnt, 1],
-                2*np.arcsin(doa_loss[epoch_cnt, 1]/2.0)/np.pi,
-                1 - (doa_loss[epoch_cnt, 5] / float(doa_gt.shape[0]))]
+        if run_validation:
+            pred = model.predict(
+                x=data_gen_val.generate(),
+                steps=val_steps,
+                verbose=0
             )
+            if params['mode'] == 'regr':
+                sed_pred = evaluation_metrics.reshape_3Dto2D(pred[0]) > 0.5
+                doa_pred = evaluation_metrics.reshape_3Dto2D(pred[1])
+
+                sed_loss[epoch_cnt, :] = evaluation_metrics.compute_sed_scores(
+                    sed_pred, sed_gt, data_gen_val.nb_frames_1s())
+                if params['azi_only']:
+                    doa_loss[epoch_cnt, :], conf_mat = evaluation_metrics.compute_doa_scores_regr_xy(
+                        doa_pred, doa_gt, sed_pred, sed_gt)
+                else:
+                    doa_loss[epoch_cnt, :], conf_mat = evaluation_metrics.compute_doa_scores_regr_xyz(
+                        doa_pred, doa_gt, sed_pred, sed_gt)
+
+                epoch_metric_loss[epoch_cnt] = np.mean([
+                    sed_loss[epoch_cnt, 0],
+                    1-sed_loss[epoch_cnt, 1],
+                    2*np.arcsin(doa_loss[epoch_cnt, 1]/2.0)/np.pi,
+                    1 - (doa_loss[epoch_cnt, 5] / float(doa_gt.shape[0]))]
+                )
+        elif epoch_cnt > 0:
+            val_loss[epoch_cnt] = val_loss[epoch_cnt - 1]
+            sed_loss[epoch_cnt, :] = sed_loss[epoch_cnt - 1, :]
+            doa_loss[epoch_cnt, :] = doa_loss[epoch_cnt - 1, :]
+            epoch_metric_loss[epoch_cnt] = epoch_metric_loss[epoch_cnt - 1]
         plot_functions(unique_name, tr_loss, val_loss, sed_loss, doa_loss, epoch_metric_loss)
 
-        patience_cnt += 1
+        patience_cnt += 1 if run_validation else 0
         if params.get('save_checkpoints', True):
             model.save(last_model_path)
-        if epoch_metric_loss[epoch_cnt] < best_metric:
+        if run_validation and epoch_metric_loss[epoch_cnt] < best_metric:
             best_metric = epoch_metric_loss[epoch_cnt]
             best_conf_mat = conf_mat
             best_epoch = epoch_cnt
@@ -319,19 +339,23 @@ def main(argv):
         if wandb_run:
             wandb_log = {
                 'epoch': epoch_cnt,
+                'validation/ran': int(run_validation),
                 'train/loss': tr_loss[epoch_cnt],
-                'val/loss': val_loss[epoch_cnt],
-                'sed/er_overall': sed_loss[epoch_cnt, 0],
-                'sed/f1_overall': sed_loss[epoch_cnt, 1],
-                'doa/avg_accuracy': doa_loss[epoch_cnt, 0],
-                'doa/error_gt': doa_loss[epoch_cnt, 1],
-                'doa/error_pred': doa_loss[epoch_cnt, 2],
-                'doa/good_frame_count': doa_loss[epoch_cnt, 5],
-                'doa/good_pks_ratio': doa_loss[epoch_cnt, 5] / float(sed_gt.shape[0]),
-                'seld/error_metric': epoch_metric_loss[epoch_cnt],
                 'seld/best_error_metric': best_metric,
                 'seld/best_epoch': best_epoch,
             }
+            if run_validation:
+                wandb_log.update({
+                    'val/loss': val_loss[epoch_cnt],
+                    'sed/er_overall': sed_loss[epoch_cnt, 0],
+                    'sed/f1_overall': sed_loss[epoch_cnt, 1],
+                    'doa/avg_accuracy': doa_loss[epoch_cnt, 0],
+                    'doa/error_gt': doa_loss[epoch_cnt, 1],
+                    'doa/error_pred': doa_loss[epoch_cnt, 2],
+                    'doa/good_frame_count': doa_loss[epoch_cnt, 5],
+                    'doa/good_pks_ratio': doa_loss[epoch_cnt, 5] / float(sed_gt.shape[0]),
+                    'seld/error_metric': epoch_metric_loss[epoch_cnt],
+                })
             if tr_acc is not None:
                 wandb_log['train/accuracy'] = tr_acc
             if val_acc is not None:
@@ -339,12 +363,11 @@ def main(argv):
             wandb_run.log(wandb_log, step=epoch_cnt)
 
         print(
-            'epoch_cnt: %d, time: %.2fs, tr_loss: %.2f, val_loss: %.2f, '
-            'F1_overall: %.2f, ER_overall: %.2f, '
-            'doa_error_gt: %.2f, doa_error_pred: %.2f, good_pks_ratio:%.2f, '
-            'error_metric: %.2f, best_error_metric: %.2f, best_epoch : %d' %
+            'epoch_cnt: %d, time: %.2fs, validation: %s, tr_loss: %.2f, val_loss: %.2f, '
+            'F1_overall: %.2f, ER_overall: %.2f, doa_error_gt: %.2f, doa_error_pred: %.2f, '
+            'good_pks_ratio:%.2f, error_metric: %.2f, best_error_metric: %.2f, best_epoch : %d' %
             (
-                epoch_cnt, time.time() - start, tr_loss[epoch_cnt], val_loss[epoch_cnt],
+                epoch_cnt, time.time() - start, run_validation, tr_loss[epoch_cnt], val_loss[epoch_cnt],
                 sed_loss[epoch_cnt, 1], sed_loss[epoch_cnt, 0],
                 doa_loss[epoch_cnt, 1], doa_loss[epoch_cnt, 2], doa_loss[epoch_cnt, 5] / float(sed_gt.shape[0]),
                 epoch_metric_loss[epoch_cnt], best_metric, best_epoch
