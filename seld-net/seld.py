@@ -59,12 +59,6 @@ class TqdmFitProgress(Callback):
         self._train_bar = None
         self._val_bar = None
 
-    def set_model(self, model):
-        self.model = model
-
-    def set_params(self, params):
-        self.params = params
-
     def on_train_begin(self, logs=None):
         desc = 'Epoch {}/{} train'.format(self._epoch + 1, self._total_epochs)
         self._train_bar = tqdm(total=self._train_steps, desc=desc, unit='batch')
