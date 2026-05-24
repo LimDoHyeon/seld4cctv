@@ -30,6 +30,10 @@ def get_params(argv):
         xyz_def_zero=True,          # Use default DOA Cartesian value x,y,z = 0,0,0
         nb_epochs=1000,             # Train for maximum epochs
 
+        # Distributed training
+        distributed_strategy='auto', # 'auto', 'mirrored', or 'off'
+        distributed_devices=None,    # Example: ['/gpu:0', '/gpu:1']; None uses all visible GPUs
+
         # Weights & Biases logging
         use_wandb=True,
         wandb_project='seld4cctv',

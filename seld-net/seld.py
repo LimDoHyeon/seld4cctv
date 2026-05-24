@@ -12,6 +12,7 @@ import keras_model
 import parameter
 import utils
 import time
+import tensorflow as tf
 from tensorflow.keras.callbacks import Callback
 from IPython import embed
 from tqdm import tqdm
@@ -40,6 +41,31 @@ def init_wandb(params, job_id, run_name):
         name=os.path.basename(run_name),
         config=dict(params, job_id=job_id),
     )
+
+
+def get_distribution_strategy(params):
+    strategy_name = params.get('distributed_strategy', 'auto')
+    devices = params.get('distributed_devices')
+    gpus = tf.config.list_physical_devices('GPU')
+
+    if strategy_name == 'off':
+        strategy = tf.distribute.get_strategy()
+    elif strategy_name == 'mirrored' or (strategy_name == 'auto' and len(gpus) > 1):
+        strategy = tf.distribute.MirroredStrategy(devices=devices)
+    else:
+        strategy = tf.distribute.get_strategy()
+
+    print(
+        'DISTRIBUTION:\n'
+        '\tstrategy: {}\n'
+        '\tvisible_gpus: {}\n'
+        '\tnum_replicas: {}\n'.format(
+            strategy.__class__.__name__,
+            len(gpus),
+            strategy.num_replicas_in_sync
+        )
+    )
+    return strategy
 
 
 def history_last(history, candidates):
@@ -167,6 +193,12 @@ def main(argv):
     unique_name = os.path.join(model_dir, unique_name)
     print("unique_name: {}\n".format(unique_name))
     wandb_run = init_wandb(params, job_id, unique_name)
+    strategy = get_distribution_strategy(params)
+    if wandb_run:
+        wandb_run.config.update({
+            'distribution_strategy': strategy.__class__.__name__,
+            'num_replicas_in_sync': strategy.num_replicas_in_sync,
+        }, allow_val_change=True)
 
     data_gen_train = cls_data_generator.DataGenerator(
         dataset=params['dataset'], ov=params['overlap'], split=params['split'], db=params['db'], nfft=params['nfft'],
@@ -208,10 +240,11 @@ def main(argv):
         )
     )
 
-    model = keras_model.get_model(data_in=data_in, data_out=data_out, dropout_rate=params['dropout_rate'],
-                                  nb_cnn2d_filt=params['nb_cnn2d_filt'], pool_size=params['pool_size'],
-                                  rnn_size=params['rnn_size'], fnn_size=params['fnn_size'],
-                                  classification_mode=params['mode'], weights=params['loss_weights'])
+    with strategy.scope():
+        model = keras_model.get_model(data_in=data_in, data_out=data_out, dropout_rate=params['dropout_rate'],
+                                      nb_cnn2d_filt=params['nb_cnn2d_filt'], pool_size=params['pool_size'],
+                                      rnn_size=params['rnn_size'], fnn_size=params['fnn_size'],
+                                      classification_mode=params['mode'], weights=params['loss_weights'])
     best_metric = 99999
     conf_mat = None
     best_conf_mat = None
