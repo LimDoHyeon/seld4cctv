@@ -30,10 +30,15 @@ def get_model(data_in, data_out, dropout_rate, nb_cnn2d_filt, pool_size,
     spec_start = Input(shape=(data_in[-3], data_in[-2], data_in[-1]))
     spec_cnn = spec_start
     for i, convCnt in enumerate(pool_size):
-        spec_cnn = Conv2D(filters=nb_cnn2d_filt, kernel_size=(3, 3), padding='same')(spec_cnn)
-        spec_cnn = BatchNormalization()(spec_cnn)
+        spec_cnn = Conv2D(
+            filters=nb_cnn2d_filt,
+            kernel_size=(3, 3),
+            padding='same',
+            data_format='channels_first'
+        )(spec_cnn)
+        spec_cnn = BatchNormalization(axis=1)(spec_cnn)
         spec_cnn = Activation('relu')(spec_cnn)
-        spec_cnn = MaxPooling2D(pool_size=(1, pool_size[i]))(spec_cnn)
+        spec_cnn = MaxPooling2D(pool_size=(1, pool_size[i]), data_format='channels_first')(spec_cnn)
         spec_cnn = Dropout(dropout_rate)(spec_cnn)
     spec_cnn = Permute((2, 1, 3))(spec_cnn)
 
