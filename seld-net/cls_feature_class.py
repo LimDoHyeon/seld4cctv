@@ -3,6 +3,7 @@
 
 
 import os
+import csv
 import numpy as np
 import scipy.io.wavfile as wav
 import utils
@@ -18,7 +19,15 @@ class FeatureClass:
 
         # TODO: Change the path according to your machine.
         # TODO: It should point to a folder which consists of sub-folders for audio and metada
-        if dataset == 'ansim':
+        self._repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+        self._manifest_paths = None
+        if dataset == 'spatial':
+            self._base_folder = os.path.join(self._repo_root, 'Dataset', 'spatial-mic-array', 'seldnet')
+            self._manifest_paths = [
+                os.path.join(self._repo_root, 'Dataset', 'spatial', 'train.csv'),
+                os.path.join(self._repo_root, 'Dataset', 'spatial', 'test.csv')
+            ]
+        elif dataset == 'ansim':
             self._base_folder = os.path.join('/scratch/asignal/sharath', 'doa_data/')
         elif dataset == 'resim':
             self._base_folder = os.path.join('/proj/asignal/TUT_SELD/', 'doa_data_echoic/')
@@ -53,45 +62,23 @@ class FeatureClass:
         self._dataset = dataset
         self._eps = np.spacing(np.float(1e-16))
 
-        # If circular-array 8 channels else 4 for Ambisonic
-        if 'c' in self._dataset:
+        # If circular-array 8 channels else 4 for Ambisonic/CCTV-cross
+        if 'c' in self._dataset and self._dataset != 'spatial':
             self._nb_channels = 8
         else:
             self._nb_channels = 4
 
-        # Sound event classes dictionary
-        self._unique_classes = dict()
-        if 'real' in self._dataset:
-            # Urbansound8k sound events
-            self._unique_classes = \
-                {
-                    '1': 0,
-                    '3': 1,
-                    '4': 2,
-                    '5': 3,
-                    '6': 4,
-                    '7': 5,
-                    '8': 6,
-                    '9': 7
-                }
-        else:
-            # DCASE 2016 Task 2 sound events
-            self._unique_classes = \
-                {
-                    'clearthroat': 2,
-                    'cough': 8,
-                    'doorslam': 9,
-                    'drawer': 1,
-                    'keyboard': 6,
-                    'keysDrop': 4,
-                    'knock': 0,
-                    'laughter': 10,
-                    'pageturn': 7,
-                    'phone': 3,
-                    'speech': 5
-                }
+        # CCTV sound event classes. Keep this aligned with Dataset/spatial/*.csv class_index.
+        self._unique_classes = {
+            'breaking': 0,
+            'burst': 1,
+            'car_crash': 2,
+            'gunfire': 3,
+            'screaming': 4,
+            'shouting': 5
+        }
 
-        self._fs = 44100
+        self._fs = 16000
         self._frame_res = self._fs / float(self._hop_len)
         self._hop_len_s = self._nfft/2.0/self._fs
         self._nb_frames_1s = int(1 / self._hop_len_s)
@@ -124,6 +111,13 @@ class FeatureClass:
 
     def _load_audio(self, audio_path):
         fs, audio = wav.read(audio_path)
+        if fs != self._fs:
+            raise ValueError('Expected {} Hz audio, got {} Hz: {}'.format(self._fs, fs, audio_path))
+        if len(audio.shape) == 1:
+            audio = audio[:, np.newaxis]
+        if audio.shape[1] < self._nb_channels:
+            raise ValueError('Expected at least {} channels, got {}: {}'.format(
+                self._nb_channels, audio.shape[1], audio_path))
         audio = audio[:, :self._nb_channels] / 32768.0 + self._eps
         if audio.shape[0] < self._audio_max_len_samples:
             zero_pad = np.zeros((self._audio_max_len_samples - audio.shape[0], audio.shape[1]))
@@ -154,7 +148,50 @@ class FeatureClass:
         print(audio_spec.shape)
         np.save(os.path.join(self._feat_dir, audio_filename), audio_spec.reshape(self._max_frames, -1))
 
+    def _extract_spectrogram_from_manifest_row(self, row):
+        audio_path = self._resolve_manifest_path(row['seldnet_wav_path'])
+        audio_filename = os.path.basename(row['seldnet_wav_path'])
+        audio_in, fs = self._load_audio(audio_path)
+        audio_spec = self._spectrogram(audio_in)
+        print(audio_spec.shape)
+        np.save(os.path.join(self._feat_dir, audio_filename), audio_spec.reshape(self._max_frames, -1))
+
     # OUTPUT LABELS
+    def _resolve_manifest_path(self, path):
+        if os.path.isabs(path):
+            return path
+        return os.path.join(self._repo_root, path.replace('/', os.sep))
+
+    def _read_manifest_rows(self):
+        rows = list()
+        for manifest_path in self._manifest_paths:
+            if not os.path.exists(manifest_path):
+                raise IOError('Manifest file not found: {}'.format(manifest_path))
+            with open(manifest_path, 'r') as fid:
+                reader = csv.DictReader(fid)
+                for row in reader:
+                    if int(row['sample_rate_hz']) != self._fs:
+                        raise ValueError('Expected manifest sample_rate_hz {}, got {} in {}'.format(
+                            self._fs, row['sample_rate_hz'], manifest_path))
+                    if int(row['channel_count']) != self._nb_channels:
+                        raise ValueError('Expected manifest channel_count {}, got {} in {}'.format(
+                            self._nb_channels, row['channel_count'], manifest_path))
+                    rows.append(row)
+        return rows
+
+    def _manifest_row_to_desc_file(self, row):
+        return {
+            'class': [row['class_name']],
+            'start': [int(np.floor(float(row['onset_sec']) * self._frame_res))],
+            'end': [int(np.ceil(float(row['offset_sec']) * self._frame_res))],
+            'ele': [float(row['elevation_deg'])],
+            'azi': [float(row['seldnet_azimuth_deg'])],
+            'ele_dir': list(),
+            'azi_dir': list(),
+            'ang_vel': list(),
+            'dist': [float(row['distance_m'])]
+        }
+
     def _read_desc_file(self, desc_filename):
         desc_file = {
             'class': list(), 'start': list(), 'end': list(), 'ele': list(), 'azi': list(),
@@ -354,6 +391,12 @@ class FeatureClass:
         print('\t\taud_dir {}\n\t\tdesc_dir {}\n\t\tfeat_dir {}'.format(
             self._aud_dir, self._desc_dir, self._feat_dir))
 
+        if self._manifest_paths:
+            for file_cnt, row in enumerate(self._read_manifest_rows()):
+                print('file_cnt {}, file_name {}'.format(file_cnt, os.path.basename(row['seldnet_wav_path'])))
+                self._extract_spectrogram_from_manifest_row(row)
+            return
+
         for file_cnt, file_name in enumerate(os.listdir(self._desc_dir)):
             print('file_cnt {}, file_name {}'.format(file_cnt, file_name))
             wav_filename = '{}.wav'.format(file_name.split('.')[0])
@@ -434,6 +477,14 @@ class FeatureClass:
         print('\t\taud_dir {}\n\t\tdesc_dir {}\n\t\tlabel_dir {}'.format(
             self._aud_dir, self._desc_dir, self._label_dir))
         utils.create_folder(self._label_dir)
+
+        if self._manifest_paths:
+            for file_cnt, row in enumerate(self._read_manifest_rows()):
+                wav_filename = os.path.basename(row['seldnet_wav_path'])
+                print('file_cnt {}, file_name {}'.format(file_cnt, wav_filename))
+                desc_file = self._manifest_row_to_desc_file(row)
+                self._get_labels_for_file(wav_filename, desc_file)
+            return
 
         for file_cnt, file_name in enumerate(os.listdir(self._desc_dir)):
             print('file_cnt {}, file_name {}'.format(file_cnt, file_name))

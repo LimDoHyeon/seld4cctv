@@ -12,10 +12,10 @@ def get_params(argv):
         azi_only=True,      # Estimate Azimuth only
 
         # Dataset loading parameters
-        dataset='ansim',    # Dataset to use: ansim, resim, cansim, cresim, real, mansim or mreal
+        dataset='spatial',  # Dataset to use: spatial
         overlap=1,         # maximum number of overlapping sound events [1, 2, 3]
         split=1,           # Cross validation split [1, 2, 3]
-        db=30,             # SNR of sound events.
+        db=0,              # SNR of sound events.
         nfft=512,          # FFT/window length size
 
         # DNN Model parameters
@@ -67,6 +67,13 @@ def get_params(argv):
 
     elif argv == '6':  # real-life Ambisonic data set
         params['dataset'] = 'real'
+        params['sequence_length'] = 512
+
+    elif argv == '10':  # CCTV spatial microphone-array data set
+        params['dataset'] = 'spatial'
+        params['overlap'] = 1
+        params['split'] = 1
+        params['db'] = 0
         params['sequence_length'] = 512
 
     # anechoic circular array data set split 1, overlap 3
