@@ -8,8 +8,8 @@ def get_params(argv):
     print("SET: {}".format(argv))
     # ########### default parameters ##############
     params = dict(
-        quick_test=True,    # To do quick test. Trains/test on small subset of dataset
-        azi_only=True,      # Estimate Azimuth only
+        quick_test=False,    # To do quick test. Trains/test on small subset of dataset
+        azi_only=False,      # Estimate Azimuth only
 
         # Dataset loading parameters
         dataset='spatial',  # Dataset to use: spatial
@@ -36,7 +36,7 @@ def get_params(argv):
         lr_factor=0.5,              # LR reduction factor
         xyz_def_zero=True,          # Use default DOA Cartesian value x,y,z = 0,0,0
         nb_epochs=1000,             # Train for maximum epochs
-        validation_interval=10,      # Run validation every N epochs.
+        validation_interval=5,      # Run validation every N epochs.
 
         # Distributed training
         distributed_strategy='auto', # 'auto', 'mirrored', or 'off'
