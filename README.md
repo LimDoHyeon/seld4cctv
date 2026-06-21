@@ -3,12 +3,10 @@
   <table border="0" style="border-collapse: collapse; border: none;">
     <tr style="border: none; background: transparent;">
       <td align="center" style="border: none; padding: 0 32px;">
-        <strong>Jongmoon Ryu</strong><br/>
-        20251161
+        <strong>Jongmoon Ryu</strong>
       </td>
       <td align="center" style="border: none; padding: 0 32px;">
-        <strong>Dohyeon Lim</strong><br/>
-        20251165
+        <strong>Dohyeon Lim</strong>
       </td>
     </tr>
   </table>
