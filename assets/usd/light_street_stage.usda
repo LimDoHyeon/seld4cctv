@@ -1,0 +1,858 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 0.01
+    upAxis = "Z"
+    startTimeCode = 0
+    endTimeCode = 240
+    framesPerSecond = 30
+    timeCodesPerSecond = 30
+)
+
+def Xform "World"
+{
+    def Scope "Looks"
+    {
+        def Material "Mat_Asphalt"
+        {
+            token outputs:surface.connect = </World/Looks/Mat_Asphalt/PreviewSurface.outputs:surface>
+            def Shader "PreviewSurface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.035, 0.037, 0.04)
+                float inputs:roughness = 0.82
+                token outputs:surface
+            }
+        }
+
+        def Material "Mat_Sidewalk"
+        {
+            token outputs:surface.connect = </World/Looks/Mat_Sidewalk/PreviewSurface.outputs:surface>
+            def Shader "PreviewSurface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.47, 0.46, 0.42)
+                float inputs:roughness = 0.75
+                token outputs:surface
+            }
+        }
+
+        def Material "Mat_Curb"
+        {
+            token outputs:surface.connect = </World/Looks/Mat_Curb/PreviewSurface.outputs:surface>
+            def Shader "PreviewSurface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.68, 0.66, 0.6)
+                float inputs:roughness = 0.7
+                token outputs:surface
+            }
+        }
+
+        def Material "Mat_Ground"
+        {
+            token outputs:surface.connect = </World/Looks/Mat_Ground/PreviewSurface.outputs:surface>
+            def Shader "PreviewSurface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.12, 0.23, 0.13)
+                float inputs:roughness = 0.9
+                token outputs:surface
+            }
+        }
+
+        def Material "Mat_Building"
+        {
+            token outputs:surface.connect = </World/Looks/Mat_Building/PreviewSurface.outputs:surface>
+            def Shader "PreviewSurface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.3, 0.34, 0.36)
+                float inputs:roughness = 0.64
+                token outputs:surface
+            }
+        }
+
+    }
+
+    def Xform "Environment"
+    {
+        def Xform "StreetBlock"
+        {
+            def Cube "Ground" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                double size = 1
+                rel material:binding = </World/Looks/Mat_Ground>
+                double3 xformOp:translate = (0, 0, -2)
+                double3 xformOp:scale = (1300, 1300, 4)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            }
+
+            def Cube "Road_NS" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                double size = 1
+                rel material:binding = </World/Looks/Mat_Asphalt>
+                double3 xformOp:translate = (0, 0, 0)
+                double3 xformOp:scale = (150, 1120, 6)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            }
+
+            def Cube "Road_EW" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                double size = 1
+                rel material:binding = </World/Looks/Mat_Asphalt>
+                double3 xformOp:translate = (0, 0, 1)
+                double3 xformOp:scale = (1120, 150, 6)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            }
+
+            def Cube "Sidewalk_NW" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                double size = 1
+                rel material:binding = </World/Looks/Mat_Sidewalk>
+                double3 xformOp:translate = (-340, 340, 4)
+                double3 xformOp:scale = (370, 370, 8)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            }
+
+            def Cube "Sidewalk_NE" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                double size = 1
+                rel material:binding = </World/Looks/Mat_Sidewalk>
+                double3 xformOp:translate = (340, 340, 4)
+                double3 xformOp:scale = (370, 370, 8)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            }
+
+            def Cube "Sidewalk_SW" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                double size = 1
+                rel material:binding = </World/Looks/Mat_Sidewalk>
+                double3 xformOp:translate = (-340, -340, 4)
+                double3 xformOp:scale = (370, 370, 8)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            }
+
+            def Cube "Sidewalk_SE" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                double size = 1
+                rel material:binding = </World/Looks/Mat_Sidewalk>
+                double3 xformOp:translate = (340, -340, 4)
+                double3 xformOp:scale = (370, 370, 8)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            }
+
+            def Cube "Curb_W" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                double size = 1
+                rel material:binding = </World/Looks/Mat_Curb>
+                double3 xformOp:translate = (-80, 0, 12)
+                double3 xformOp:scale = (8, 1120, 16)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            }
+
+            def Cube "Curb_E" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                double size = 1
+                rel material:binding = </World/Looks/Mat_Curb>
+                double3 xformOp:translate = (80, 0, 12)
+                double3 xformOp:scale = (8, 1120, 16)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            }
+
+            def Cube "Curb_S" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                double size = 1
+                rel material:binding = </World/Looks/Mat_Curb>
+                double3 xformOp:translate = (0, -80, 13)
+                double3 xformOp:scale = (1120, 8, 16)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            }
+
+            def Cube "Curb_N" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                double size = 1
+                rel material:binding = </World/Looks/Mat_Curb>
+                double3 xformOp:translate = (0, 80, 13)
+                double3 xformOp:scale = (1120, 8, 16)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            }
+
+            def Xform "LaneMarkings"
+            {
+                def Cube "Yellow_NS_01"
+                {
+                    double size = 1
+                    color3f[] primvars:displayColor = [(0.95, 0.78, 0.12)]
+                    double3 xformOp:translate = (0, -440, 7)
+                    double3 xformOp:scale = (6, 60, 2)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+
+                def Cube "Yellow_NS_02"
+                {
+                    double size = 1
+                    color3f[] primvars:displayColor = [(0.95, 0.78, 0.12)]
+                    double3 xformOp:translate = (0, -320, 7)
+                    double3 xformOp:scale = (6, 60, 2)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+
+                def Cube "Yellow_NS_03"
+                {
+                    double size = 1
+                    color3f[] primvars:displayColor = [(0.95, 0.78, 0.12)]
+                    double3 xformOp:translate = (0, -200, 7)
+                    double3 xformOp:scale = (6, 60, 2)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+
+                def Cube "Yellow_NS_04"
+                {
+                    double size = 1
+                    color3f[] primvars:displayColor = [(0.95, 0.78, 0.12)]
+                    double3 xformOp:translate = (0, 200, 7)
+                    double3 xformOp:scale = (6, 60, 2)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+
+                def Cube "Yellow_NS_05"
+                {
+                    double size = 1
+                    color3f[] primvars:displayColor = [(0.95, 0.78, 0.12)]
+                    double3 xformOp:translate = (0, 320, 7)
+                    double3 xformOp:scale = (6, 60, 2)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+
+                def Cube "Yellow_NS_06"
+                {
+                    double size = 1
+                    color3f[] primvars:displayColor = [(0.95, 0.78, 0.12)]
+                    double3 xformOp:translate = (0, 440, 7)
+                    double3 xformOp:scale = (6, 60, 2)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+
+                def Cube "Yellow_EW_01"
+                {
+                    double size = 1
+                    color3f[] primvars:displayColor = [(0.95, 0.78, 0.12)]
+                    double3 xformOp:translate = (-440, 0, 8)
+                    double3 xformOp:scale = (60, 6, 2)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+
+                def Cube "Yellow_EW_02"
+                {
+                    double size = 1
+                    color3f[] primvars:displayColor = [(0.95, 0.78, 0.12)]
+                    double3 xformOp:translate = (-320, 0, 8)
+                    double3 xformOp:scale = (60, 6, 2)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+
+                def Cube "Yellow_EW_03"
+                {
+                    double size = 1
+                    color3f[] primvars:displayColor = [(0.95, 0.78, 0.12)]
+                    double3 xformOp:translate = (-200, 0, 8)
+                    double3 xformOp:scale = (60, 6, 2)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+
+                def Cube "Yellow_EW_04"
+                {
+                    double size = 1
+                    color3f[] primvars:displayColor = [(0.95, 0.78, 0.12)]
+                    double3 xformOp:translate = (200, 0, 8)
+                    double3 xformOp:scale = (60, 6, 2)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+
+                def Cube "Yellow_EW_05"
+                {
+                    double size = 1
+                    color3f[] primvars:displayColor = [(0.95, 0.78, 0.12)]
+                    double3 xformOp:translate = (320, 0, 8)
+                    double3 xformOp:scale = (60, 6, 2)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+
+                def Cube "Yellow_EW_06"
+                {
+                    double size = 1
+                    color3f[] primvars:displayColor = [(0.95, 0.78, 0.12)]
+                    double3 xformOp:translate = (440, 0, 8)
+                    double3 xformOp:scale = (60, 6, 2)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+
+                def Cube "Crosswalk_N_01"
+                {
+                    double size = 1
+                    color3f[] primvars:displayColor = [(0.92, 0.9, 0.84)]
+                    double3 xformOp:translate = (-55, 115, 9)
+                    double3 xformOp:scale = (9, 48, 2)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+
+                def Cube "Crosswalk_S_01"
+                {
+                    double size = 1
+                    color3f[] primvars:displayColor = [(0.92, 0.9, 0.84)]
+                    double3 xformOp:translate = (-55, -115, 9)
+                    double3 xformOp:scale = (9, 48, 2)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+
+                def Cube "Crosswalk_N_02"
+                {
+                    double size = 1
+                    color3f[] primvars:displayColor = [(0.92, 0.9, 0.84)]
+                    double3 xformOp:translate = (-35, 115, 9)
+                    double3 xformOp:scale = (9, 48, 2)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+
+                def Cube "Crosswalk_S_02"
+                {
+                    double size = 1
+                    color3f[] primvars:displayColor = [(0.92, 0.9, 0.84)]
+                    double3 xformOp:translate = (-35, -115, 9)
+                    double3 xformOp:scale = (9, 48, 2)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+
+                def Cube "Crosswalk_N_03"
+                {
+                    double size = 1
+                    color3f[] primvars:displayColor = [(0.92, 0.9, 0.84)]
+                    double3 xformOp:translate = (-15, 115, 9)
+                    double3 xformOp:scale = (9, 48, 2)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+
+                def Cube "Crosswalk_S_03"
+                {
+                    double size = 1
+                    color3f[] primvars:displayColor = [(0.92, 0.9, 0.84)]
+                    double3 xformOp:translate = (-15, -115, 9)
+                    double3 xformOp:scale = (9, 48, 2)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+
+                def Cube "Crosswalk_N_04"
+                {
+                    double size = 1
+                    color3f[] primvars:displayColor = [(0.92, 0.9, 0.84)]
+                    double3 xformOp:translate = (5, 115, 9)
+                    double3 xformOp:scale = (9, 48, 2)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+
+                def Cube "Crosswalk_S_04"
+                {
+                    double size = 1
+                    color3f[] primvars:displayColor = [(0.92, 0.9, 0.84)]
+                    double3 xformOp:translate = (5, -115, 9)
+                    double3 xformOp:scale = (9, 48, 2)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+
+                def Cube "Crosswalk_N_05"
+                {
+                    double size = 1
+                    color3f[] primvars:displayColor = [(0.92, 0.9, 0.84)]
+                    double3 xformOp:translate = (25, 115, 9)
+                    double3 xformOp:scale = (9, 48, 2)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+
+                def Cube "Crosswalk_S_05"
+                {
+                    double size = 1
+                    color3f[] primvars:displayColor = [(0.92, 0.9, 0.84)]
+                    double3 xformOp:translate = (25, -115, 9)
+                    double3 xformOp:scale = (9, 48, 2)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+
+                def Cube "Crosswalk_N_06"
+                {
+                    double size = 1
+                    color3f[] primvars:displayColor = [(0.92, 0.9, 0.84)]
+                    double3 xformOp:translate = (45, 115, 9)
+                    double3 xformOp:scale = (9, 48, 2)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+
+                def Cube "Crosswalk_S_06"
+                {
+                    double size = 1
+                    color3f[] primvars:displayColor = [(0.92, 0.9, 0.84)]
+                    double3 xformOp:translate = (45, -115, 9)
+                    double3 xformOp:scale = (9, 48, 2)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+
+                def Cube "Crosswalk_E_01"
+                {
+                    double size = 1
+                    color3f[] primvars:displayColor = [(0.92, 0.9, 0.84)]
+                    double3 xformOp:translate = (115, -55, 10)
+                    double3 xformOp:scale = (48, 9, 2)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+
+                def Cube "Crosswalk_W_01"
+                {
+                    double size = 1
+                    color3f[] primvars:displayColor = [(0.92, 0.9, 0.84)]
+                    double3 xformOp:translate = (-115, -55, 10)
+                    double3 xformOp:scale = (48, 9, 2)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+
+                def Cube "Crosswalk_E_02"
+                {
+                    double size = 1
+                    color3f[] primvars:displayColor = [(0.92, 0.9, 0.84)]
+                    double3 xformOp:translate = (115, -35, 10)
+                    double3 xformOp:scale = (48, 9, 2)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+
+                def Cube "Crosswalk_W_02"
+                {
+                    double size = 1
+                    color3f[] primvars:displayColor = [(0.92, 0.9, 0.84)]
+                    double3 xformOp:translate = (-115, -35, 10)
+                    double3 xformOp:scale = (48, 9, 2)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+
+                def Cube "Crosswalk_E_03"
+                {
+                    double size = 1
+                    color3f[] primvars:displayColor = [(0.92, 0.9, 0.84)]
+                    double3 xformOp:translate = (115, -15, 10)
+                    double3 xformOp:scale = (48, 9, 2)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+
+                def Cube "Crosswalk_W_03"
+                {
+                    double size = 1
+                    color3f[] primvars:displayColor = [(0.92, 0.9, 0.84)]
+                    double3 xformOp:translate = (-115, -15, 10)
+                    double3 xformOp:scale = (48, 9, 2)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+
+                def Cube "Crosswalk_E_04"
+                {
+                    double size = 1
+                    color3f[] primvars:displayColor = [(0.92, 0.9, 0.84)]
+                    double3 xformOp:translate = (115, 5, 10)
+                    double3 xformOp:scale = (48, 9, 2)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+
+                def Cube "Crosswalk_W_04"
+                {
+                    double size = 1
+                    color3f[] primvars:displayColor = [(0.92, 0.9, 0.84)]
+                    double3 xformOp:translate = (-115, 5, 10)
+                    double3 xformOp:scale = (48, 9, 2)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+
+                def Cube "Crosswalk_E_05"
+                {
+                    double size = 1
+                    color3f[] primvars:displayColor = [(0.92, 0.9, 0.84)]
+                    double3 xformOp:translate = (115, 25, 10)
+                    double3 xformOp:scale = (48, 9, 2)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+
+                def Cube "Crosswalk_W_05"
+                {
+                    double size = 1
+                    color3f[] primvars:displayColor = [(0.92, 0.9, 0.84)]
+                    double3 xformOp:translate = (-115, 25, 10)
+                    double3 xformOp:scale = (48, 9, 2)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+
+                def Cube "Crosswalk_E_06"
+                {
+                    double size = 1
+                    color3f[] primvars:displayColor = [(0.92, 0.9, 0.84)]
+                    double3 xformOp:translate = (115, 45, 10)
+                    double3 xformOp:scale = (48, 9, 2)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+
+                def Cube "Crosswalk_W_06"
+                {
+                    double size = 1
+                    color3f[] primvars:displayColor = [(0.92, 0.9, 0.84)]
+                    double3 xformOp:translate = (-115, 45, 10)
+                    double3 xformOp:scale = (48, 9, 2)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+
+            }
+
+            def Xform "StreetFurniture"
+            {
+                def Cube "Bench_01_Seat"
+                {
+                    double size = 1
+                    color3f[] primvars:displayColor = [(0.32, 0.16, 0.07)]
+                    double3 xformOp:translate = (-255, 170, 22)
+                    double3 xformOp:scale = (62, 18, 8)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+
+                def Cube "Bench_01_Back"
+                {
+                    double size = 1
+                    color3f[] primvars:displayColor = [(0.32, 0.16, 0.07)]
+                    double3 xformOp:translate = (-255, 158, 42)
+                    double3 xformOp:scale = (62, 6, 34)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+
+                def Cylinder "Tree_01_Trunk"
+                {
+                    double height = 80
+                    double radius = 8
+                    uniform token axis = "Z"
+                    color3f[] primvars:displayColor = [(0.28, 0.15, 0.06)]
+                    double3 xformOp:translate = (-420, 250, 40)
+                    uniform token[] xformOpOrder = ["xformOp:translate"]
+                }
+
+                def Sphere "Tree_01_Canopy"
+                {
+                    double radius = 42
+                    color3f[] primvars:displayColor = [(0.05, 0.3, 0.09)]
+                    double3 xformOp:translate = (-420, 250, 105)
+                    uniform token[] xformOpOrder = ["xformOp:translate"]
+                }
+
+                def Cylinder "Tree_02_Trunk"
+                {
+                    double height = 80
+                    double radius = 8
+                    uniform token axis = "Z"
+                    color3f[] primvars:displayColor = [(0.28, 0.15, 0.06)]
+                    double3 xformOp:translate = (430, -280, 40)
+                    uniform token[] xformOpOrder = ["xformOp:translate"]
+                }
+
+                def Sphere "Tree_02_Canopy"
+                {
+                    double radius = 42
+                    color3f[] primvars:displayColor = [(0.05, 0.3, 0.09)]
+                    double3 xformOp:translate = (430, -280, 105)
+                    uniform token[] xformOpOrder = ["xformOp:translate"]
+                }
+
+                def Cylinder "Tree_03_Trunk"
+                {
+                    double height = 80
+                    double radius = 8
+                    uniform token axis = "Z"
+                    color3f[] primvars:displayColor = [(0.28, 0.15, 0.06)]
+                    double3 xformOp:translate = (-455, -260, 40)
+                    uniform token[] xformOpOrder = ["xformOp:translate"]
+                }
+
+                def Sphere "Tree_03_Canopy"
+                {
+                    double radius = 42
+                    color3f[] primvars:displayColor = [(0.05, 0.3, 0.09)]
+                    double3 xformOp:translate = (-455, -260, 105)
+                    uniform token[] xformOpOrder = ["xformOp:translate"]
+                }
+
+                def Cylinder "Tree_04_Trunk"
+                {
+                    double height = 80
+                    double radius = 8
+                    uniform token axis = "Z"
+                    color3f[] primvars:displayColor = [(0.28, 0.15, 0.06)]
+                    double3 xformOp:translate = (455, 260, 40)
+                    uniform token[] xformOpOrder = ["xformOp:translate"]
+                }
+
+                def Sphere "Tree_04_Canopy"
+                {
+                    double radius = 42
+                    color3f[] primvars:displayColor = [(0.05, 0.3, 0.09)]
+                    double3 xformOp:translate = (455, 260, 105)
+                    uniform token[] xformOpOrder = ["xformOp:translate"]
+                }
+
+            }
+
+            def Xform "LowBuildings"
+            {
+                def Cube "Building_NW_01" (
+                    prepend apiSchemas = ["MaterialBindingAPI"]
+                )
+                {
+                    double size = 1
+                    rel material:binding = </World/Looks/Mat_Building>
+                    double3 xformOp:translate = (-405, 405, 120)
+                    double3 xformOp:scale = (160, 150, 240)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+
+                def Cube "Building_NE_01" (
+                    prepend apiSchemas = ["MaterialBindingAPI"]
+                )
+                {
+                    double size = 1
+                    rel material:binding = </World/Looks/Mat_Building>
+                    double3 xformOp:translate = (405, 380, 90)
+                    double3 xformOp:scale = (170, 135, 180)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+
+                def Cube "Building_SW_01" (
+                    prepend apiSchemas = ["MaterialBindingAPI"]
+                )
+                {
+                    double size = 1
+                    rel material:binding = </World/Looks/Mat_Building>
+                    double3 xformOp:translate = (-390, -390, 105)
+                    double3 xformOp:scale = (150, 160, 210)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+
+                def Cube "Building_SE_01" (
+                    prepend apiSchemas = ["MaterialBindingAPI"]
+                )
+                {
+                    double size = 1
+                    rel material:binding = </World/Looks/Mat_Building>
+                    double3 xformOp:translate = (395, -390, 130)
+                    double3 xformOp:scale = (150, 145, 260)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+
+            }
+        }
+    }
+
+    def DomeLight "Sky"
+    {
+        color3f inputs:color = (0.62, 0.70, 0.78)
+        float inputs:intensity = 250
+    }
+
+    def DistantLight "Sun"
+    {
+        float inputs:angle = 0.7
+        float inputs:intensity = 2500
+        double3 xformOp:rotateXYZ = (-45, 0, -35)
+        uniform token[] xformOpOrder = ["xformOp:rotateXYZ"]
+    }
+
+    def Camera "OverviewCamera"
+    {
+        double2 clippingRange = (1, 100000)
+        float focalLength = 24
+        uniform token projection = "perspective"
+        double3 xformOp:translate = (430, -680, 450)
+        double3 xformOp:rotateXYZ = (58, 0, 32)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+    }
+
+    def Xform "Routes"
+    {
+        def Xform "MainRoute"
+        {
+            def Xform "wp_01"
+            {
+                double3 xformOp:translate = (0, 0, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+
+            def Xform "wp_02"
+            {
+                double3 xformOp:translate = (300, 0, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+
+            def Xform "wp_03"
+            {
+                double3 xformOp:translate = (300, 300, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+
+            def Xform "wp_04"
+            {
+                double3 xformOp:translate = (0, 300, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+
+        }
+    }
+
+    def Xform "CCTV"
+    {
+        def Xform "cctv_01"
+        {
+            double3 xformOp:translate = (-120, -120, 0)
+            double3 xformOp:rotateXYZ = (0, 0, 45)
+            double3 xformOp:scale = (1, 1, 1)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+
+            def Xform "Rig" (
+                prepend references = @cctv.usda@
+            )
+            {
+            }
+        }
+
+        def Xform "cctv_02"
+        {
+            double3 xformOp:translate = (420, -120, 0)
+            double3 xformOp:rotateXYZ = (0, 0, 135)
+            double3 xformOp:scale = (1, 1, 1)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+
+            def Xform "Rig" (
+                prepend references = @cctv.usda@
+            )
+            {
+            }
+        }
+
+        def Xform "cctv_03"
+        {
+            double3 xformOp:translate = (420, 420, 0)
+            double3 xformOp:rotateXYZ = (0, 0, -135)
+            double3 xformOp:scale = (1, 1, 1)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+
+            def Xform "Rig" (
+                prepend references = @cctv.usda@
+            )
+            {
+            }
+        }
+
+        def Xform "cctv_04"
+        {
+            double3 xformOp:translate = (-120, 420, 0)
+            double3 xformOp:rotateXYZ = (0, 0, -45)
+            double3 xformOp:scale = (1, 1, 1)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+
+            def Xform "Rig" (
+                prepend references = @cctv.usda@
+            )
+            {
+            }
+        }
+
+    }
+
+    def Xform "Characters"
+    {
+    }
+
+    def Xform "Sources"
+    {
+    }
+
+    def Xform "Events"
+    {
+        def Xform "CarCrash"
+        {
+            def Xform "crash_01"
+            {
+                token visibility = "invisible"
+                double3 xformOp:translate = (120, 40, 0)
+                double3 xformOp:rotateXYZ = (0, 0, 22)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+
+                def Cube "VehicleA"
+                {
+                    double size = 1
+                    color3f[] primvars:displayColor = [(0.8, 0.12, 0.08)]
+                    double3 xformOp:translate = (-32, 0, 22)
+                    double3 xformOp:scale = (70, 32, 28)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+
+                def Cube "VehicleB"
+                {
+                    double size = 1
+                    color3f[] primvars:displayColor = [(0.06, 0.12, 0.2)]
+                    double3 xformOp:translate = (32, 22, 22)
+                    double3 xformOp:rotateXYZ = (0, 0, -52)
+                    double3 xformOp:scale = (68, 30, 26)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+                }
+            }
+
+            def Xform "crash_02"
+            {
+                token visibility = "invisible"
+                double3 xformOp:translate = (250, 260, 0)
+                double3 xformOp:rotateXYZ = (0, 0, -28)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+
+                def Cube "VehicleA"
+                {
+                    double size = 1
+                    color3f[] primvars:displayColor = [(0.72, 0.7, 0.62)]
+                    double3 xformOp:translate = (-26, 0, 22)
+                    double3 xformOp:scale = (72, 34, 28)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+
+                def Cube "VehicleB"
+                {
+                    double size = 1
+                    color3f[] primvars:displayColor = [(0.18, 0.18, 0.18)]
+                    double3 xformOp:translate = (38, -20, 22)
+                    double3 xformOp:rotateXYZ = (0, 0, 44)
+                    double3 xformOp:scale = (68, 30, 26)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+                }
+            }
+
+        }
+    }
+}

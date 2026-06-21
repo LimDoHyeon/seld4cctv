@@ -1,0 +1,210 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 0.01
+    upAxis = "Z"
+    startTimeCode = 0
+    endTimeCode = 240
+    framesPerSecond = 30
+    timeCodesPerSecond = 30
+)
+
+def Xform "World"
+{
+    def Xform "Environment"
+    {
+        def Xform "CityDemoLargeStreets" (
+            prepend references = @../city/Source/context_City/ce_Context_City/ce_Context_City_Large_Streets/ce_Context_City_Large_Streets.usd@
+        )
+        {
+            double3 xformOp:translate = (0, 0, 0)
+            double3 xformOp:rotateXYZ = (0, 0, 0)
+            double3 xformOp:scale = (1, 1, 1)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+        }
+    }
+
+    def DomeLight "Sky"
+    {
+        color3f inputs:color = (0.62, 0.70, 0.78)
+        float inputs:intensity = 250
+    }
+
+    def DistantLight "Sun"
+    {
+        float inputs:angle = 0.7
+        float inputs:intensity = 2500
+        double3 xformOp:rotateXYZ = (-45, 0, -35)
+        uniform token[] xformOpOrder = ["xformOp:rotateXYZ"]
+    }
+
+    def Camera "OverviewCamera"
+    {
+        double2 clippingRange = (1, 100000)
+        float focalLength = 24
+        uniform token projection = "perspective"
+        double3 xformOp:translate = (430, -680, 450)
+        double3 xformOp:rotateXYZ = (58, 0, 32)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+    }
+
+    def Xform "Routes"
+    {
+        def Xform "MainRoute"
+        {
+            def Xform "wp_01"
+            {
+                double3 xformOp:translate = (0, 0, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+
+            def Xform "wp_02"
+            {
+                double3 xformOp:translate = (300, 0, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+
+            def Xform "wp_03"
+            {
+                double3 xformOp:translate = (300, 300, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+
+            def Xform "wp_04"
+            {
+                double3 xformOp:translate = (0, 300, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+
+        }
+    }
+
+    def Xform "CCTV"
+    {
+        def Xform "cctv_01"
+        {
+            double3 xformOp:translate = (-120, -120, 0)
+            double3 xformOp:rotateXYZ = (0, 0, 45)
+            double3 xformOp:scale = (1, 1, 1)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+
+            def Xform "Rig" (
+                prepend references = @cctv.usda@
+            )
+            {
+            }
+        }
+
+        def Xform "cctv_02"
+        {
+            double3 xformOp:translate = (420, -120, 0)
+            double3 xformOp:rotateXYZ = (0, 0, 135)
+            double3 xformOp:scale = (1, 1, 1)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+
+            def Xform "Rig" (
+                prepend references = @cctv.usda@
+            )
+            {
+            }
+        }
+
+        def Xform "cctv_03"
+        {
+            double3 xformOp:translate = (420, 420, 0)
+            double3 xformOp:rotateXYZ = (0, 0, -135)
+            double3 xformOp:scale = (1, 1, 1)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+
+            def Xform "Rig" (
+                prepend references = @cctv.usda@
+            )
+            {
+            }
+        }
+
+        def Xform "cctv_04"
+        {
+            double3 xformOp:translate = (-120, 420, 0)
+            double3 xformOp:rotateXYZ = (0, 0, -45)
+            double3 xformOp:scale = (1, 1, 1)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+
+            def Xform "Rig" (
+                prepend references = @cctv.usda@
+            )
+            {
+            }
+        }
+
+    }
+
+    def Xform "Characters"
+    {
+    }
+
+    def Xform "Sources"
+    {
+    }
+
+    def Xform "Events"
+    {
+        def Xform "CarCrash"
+        {
+            def Xform "crash_01"
+            {
+                token visibility = "invisible"
+                double3 xformOp:translate = (120, 40, 0)
+                double3 xformOp:rotateXYZ = (0, 0, 22)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+
+                def Cube "VehicleA"
+                {
+                    double size = 1
+                    color3f[] primvars:displayColor = [(0.8, 0.12, 0.08)]
+                    double3 xformOp:translate = (-32, 0, 22)
+                    double3 xformOp:scale = (70, 32, 28)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+
+                def Cube "VehicleB"
+                {
+                    double size = 1
+                    color3f[] primvars:displayColor = [(0.06, 0.12, 0.2)]
+                    double3 xformOp:translate = (32, 22, 22)
+                    double3 xformOp:rotateXYZ = (0, 0, -52)
+                    double3 xformOp:scale = (68, 30, 26)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+                }
+            }
+
+            def Xform "crash_02"
+            {
+                token visibility = "invisible"
+                double3 xformOp:translate = (250, 260, 0)
+                double3 xformOp:rotateXYZ = (0, 0, -28)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+
+                def Cube "VehicleA"
+                {
+                    double size = 1
+                    color3f[] primvars:displayColor = [(0.72, 0.7, 0.62)]
+                    double3 xformOp:translate = (-26, 0, 22)
+                    double3 xformOp:scale = (72, 34, 28)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+
+                def Cube "VehicleB"
+                {
+                    double size = 1
+                    color3f[] primvars:displayColor = [(0.18, 0.18, 0.18)]
+                    double3 xformOp:translate = (38, -20, 22)
+                    double3 xformOp:rotateXYZ = (0, 0, 44)
+                    double3 xformOp:scale = (68, 30, 26)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+                }
+            }
+
+        }
+    }
+}

@@ -1,69 +1,117 @@
-# SELD4CCTV: Audio-Guided Smart CCTV for Public Safety
+<div align="center">
+  <h1>Omniverse: CCTV Sound Source Localization</h1>
+  <table border="0" style="border-collapse: collapse; border: none;">
+    <tr style="border: none; background: transparent;">
+      <td align="center" style="border: none; padding: 0 32px;">
+        <strong>Jongmoon Ryu</strong><br/>
+        20251161
+      </td>
+      <td align="center" style="border: none; padding: 0 32px;">
+        <strong>Dohyeon Lim</strong><br/>
+        20251165
+      </td>
+    </tr>
+  </table>
+</div>
 
-## 개요
+<br/>
 
-이 저장소는 CCTV 형태의 4채널 공간 마이크 배열에 맞게 SELDnet을 적용한 프로젝트입니다. 현재 파이프라인은 CRNN 모델을 학습하여 다음 작업을 수행합니다.
+<i> This repository provides an NVIDIA Omniverse-based CCTV simulation for sound event localization. It demonstrates how urban sound events such as yelling, crashes, explosions, and gunshots can be triggered in a virtual city environment, while nearby CCTV cameras automatically orient toward the estimated event position. </i>
 
-- SED: 공공 안전 관련 음향 이벤트 탐지
-- SELD: 음향 이벤트 탐지와 위치 추정을 결합한 통합 추론
+<br/>
 
-## 데이터셋
+<div align="center">
 
-공간 음향 데이터셋은 비공간 공공 안전 음원 데이터를 CCTV 장착 마이크 배열에서 관측되는 소리처럼 시뮬레이션하여 생성했습니다. 원본 음원은 AudioSet과 Enhanced Audio of Accident and Crime Detection 데이터셋에서 가져왔으며, breaking, burst, car crash, gunfire, screaming, shouting 등의 클래스를 포함합니다.
+![sample demonstration](./scripts/assets/demo.gif)
 
-공간화 과정은 NVIDIA Omniverse에서 수행했습니다. 가상 장면의 물리 기반 음향 전파 효과를 원본 mono/non-spatial audio에 적용하여, 거리 기반 감쇠, 마이크 간 도달 지연, source/listener geometry에 따른 Doppler 효과를 반영했습니다. 따라서 각 샘플은 이벤트 종류뿐 아니라 SELD 학습에 필요한 공간 단서를 함께 포함합니다.
+</div>
 
-생성된 데이터셋은 다음과 같은 4채널 CCTV cross-array 마이크 레이아웃을 사용합니다.
+<br/>
 
-```text
-CCTV_Mic_Top | CCTV_Mic_Bottom | CCTV_Mic_Left | CCTV_Mic_Right
+## Installation
+
+This project is designed to run with the NVIDIA Omniverse Kit App Template. 
+
+First, download and set up the official Kit App Template by following the instructions from: https://github.com/NVIDIA-Omniverse/kit-app-template
+
+Then, place this repository at the same directory level as `kit-app-template/`.
+
+```
+omniverse/
+├── kit-app-template/
+└── cctv_sim/
 ```
 
-현재 로컬 source manifest 기준 샘플 수, 클래스별 분포는 다음과 같습니다.
+The expected workflow is to launch Omniverse from `kit-app-template/`, then run the CCTV simulation scripts from the Omniverse Script Editor.
 
-| Class | Train | Test |
-| --- | ---: | ---: |
-| breaking | 157 | 39 |
-| burst | 413 | 103 |
-| car_crash | 1,320 | 330 |
-| gunfire | 1,666 | 417 |
-| screaming | 908 | 227 |
-| shouting | 303 | 75 |
+<br/>
 
-## 실험 설정
+## Quick Start
 
-본 모델의 기본 실험 설정은 다음과 같습니다.
+From the `kit-app-template` directory, launch Omniverse with:
 
-| 항목 | 값 |
+```sh
+./repo.sh launch
+```
+
+After Omniverse is launched, open the **Script Editor** and run the following script to load the city stage and start the CCTV simulation runtime.
+
+```py
+from pathlib import Path
+import omni.usd
+
+CCTV_SIM_ROOT = Path("../cctv_sim").resolve()
+
+city_usd = CCTV_SIM_ROOT / "assets" / "city" / "World_CityDemopack.usd"
+stop_script = CCTV_SIM_ROOT / "scripts" / "stop_demo.py"
+start_script = CCTV_SIM_ROOT / "scripts" / "start_demo.py"
+
+def run_script(path):
+    namespace = {
+        "__name__": "__main__",
+        "__file__": str(path),
+        "CCTV_SIM_ROOT": str(CCTV_SIM_ROOT),
+    }
+    exec(
+        compile(path.read_text(encoding="utf-8"), str(path), "exec"),
+        namespace,
+    )
+
+opened = omni.usd.get_context().open_stage(str(city_usd).replace("\\", "/"))
+if not opened:
+    raise RuntimeError(f"Failed to open stage: {city_usd}")
+
+run_script(stop_script)
+run_script(start_script)
+```
+
+<br/>
+
+## Windows
+
+### CCTV Sound Event Demo
+
+| Button | Behavior |
 | --- | --- |
-| 데이터셋 | `spatial` |
-| Overlap / split / dB | `1 / 1 / 0` |
-| Quick test | `False` |
-| DOA 모드 | Full XYZ regression (`azi_only=False`) |
-| FFT | `512` |
-| Sequence length | `512` |
-| Batch size | `16` |
-| CNN filters | `64` |
-| Pooling | `[8, 8, 2]` |
-| RNN | Bidirectional GRU `[128, 128]` |
-| FNN | `[128]` |
-| Loss weights | `[0.1, 50.0]` for SED and DOA |
-| Optimizer | Adam, learning rate `1e-4`, clipnorm `1.0` |
-| Max epochs | `100` |
-| Validation interval | 매 `5` epoch |
-| LR schedule | 검증 성능이 `3`회 개선되지 않으면 learning rate를 절반으로 감소, 최소값 `1e-6` |
-| Checkpoints | best 및 last `.keras` 파일 저장 |
+| `+CHAR1` | Adds a walking character on the first route. |
+| `+CHAR2` | Adds a walking character on the second route. |
+| `-CHAR` | Removes the most recently added character. |
+| `yell` | Plays the yell animation on a random character and starts `scream.wav`. Nearby CCTV cameras aim at the event position. |
+| `crash` | Shows one `/World/Events/CarCrash/crash_*` asset and plays `crash.wav`. |
+| `explosion` | Selects an explosion source prim, creates a live reference to `assets/usd/explosion.usd`, and plays `explosion.wav`. The live prim is removed when the animation finishes. |
+| `gun` | Plays the gunshot animation on a random character and plays `gunshot.wav` five times, starting at frame 5 with a 36-frame interval. |
 
-## 실험 결과
+<br/>
 
-아래 그래프는 본 실험 세팅 기반 모델 학습의 100 epoch까지 주요 validation metric입니다.
+### CCTV Monitor
 
-![Validation metrics through epoch 100](spatial_ov1_split1_regr0_3d0_1_epoch100_metrics.png)
+Live feeds are off by default to reduce resource usage. When the monitor first opens, a black panel with `LIVE STOPPED` is expected.
 
-로그 기준으로 첫 100 epoch 내 최고 validation 지점은 epoch 49에서 관찰되었습니다.
+| Button | Behavior |
+| --- | --- |
+| `PERS` | Returns the main viewport to `/OmniverseKit_Persp`. |
+| `LIVE` / `STOP` | Enables or disables live viewport rendering for the current monitor layout. |
+| `ENTIRE` | Shows the 2x2 CCTV grid inside the monitor window. Pressing `ENTIRE` again while already in this mode swaps the monitor grid between outer views and ViewCamera views. The main viewport is left unchanged. |
+| `CCTV1` - `CCTV4` | Shows a single CCTV feed at the full monitor size. The main viewport uses the live ViewCamera by default, while the monitor prefers the outer camera. Pressing the same CCTV button again swaps the main viewport and monitor roles. |
 
-| Run | Best epoch | SELD error | SED ER | DOA error GT | DOA error Pred | Good peaks ratio |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| `spatial_ov1_split1_regr0_3d0_1` | 49 | 0.19 | 0.35 | 0.68 | 0.58 | 0.97 |
-
-SELD error metric은 초반에 빠르게 개선된 뒤 약 0.19 수준에서 안정화되었고, SED error rate는 첫 100 epoch의 중반부에서 가장 낮은 구간에 도달했습니다.
+Monitor rendering FPS is controlled by `CCTV_MONITOR_MAX_FPS` in `sim/config.py`. The current default is 30 FPS.

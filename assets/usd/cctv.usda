@@ -1,0 +1,390 @@
+#usda 1.0
+(
+    defaultPrim = "CCTV"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def Xform "CCTV" (
+    customData = {
+        string asset_category = "smart_city_sensor_pole"
+        string asset_name = "SmartStreetlightPole_SingleBulletCam_1xMic4ch"
+        string asset_version = "1.0"
+        bool audio_simulation_enabled = 1
+        string forward_axis = "+Y"
+        string placement_origin = "pole_base_center"
+        string unit = "city_unit"
+        string up_axis = "Z"
+    }
+)
+{
+    def Xform "Looks"
+    {
+        def Material "Mat_Pole_DarkGray"
+        {
+            token outputs:surface.connect = </CCTV/Looks/Mat_Pole_DarkGray/PreviewSurface.outputs:surface>
+
+            def Shader "PreviewSurface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.18, 0.18, 0.18)
+                float inputs:metallic = 0.2
+                float inputs:roughness = 0.65
+                token outputs:surface
+            }
+        }
+
+        def Material "Mat_Camera_Body"
+        {
+            token outputs:surface.connect = </CCTV/Looks/Mat_Camera_Body/PreviewSurface.outputs:surface>
+
+            def Shader "PreviewSurface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.62, 0.62, 0.58)
+                float inputs:metallic = 0
+                float inputs:roughness = 0.5
+                token outputs:surface
+            }
+        }
+
+        def Material "Mat_Camera_Lens"
+        {
+            token outputs:surface.connect = </CCTV/Looks/Mat_Camera_Lens/PreviewSurface.outputs:surface>
+
+            def Shader "PreviewSurface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.01, 0.01, 0.012)
+                float inputs:metallic = 0
+                float inputs:roughness = 0.18
+                token outputs:surface
+            }
+        }
+
+        def Material "Mat_MicPod"
+        {
+            token outputs:surface.connect = </CCTV/Looks/Mat_MicPod/PreviewSurface.outputs:surface>
+
+            def Shader "PreviewSurface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.5, 0.5, 0.48)
+                float inputs:metallic = 0
+                float inputs:roughness = 0.55
+                token outputs:surface
+            }
+        }
+
+        def Material "Mat_Mic_Port"
+        {
+            token outputs:surface.connect = </CCTV/Looks/Mat_Mic_Port/PreviewSurface.outputs:surface>
+
+            def Shader "PreviewSurface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.005, 0.005, 0.005)
+                float inputs:metallic = 0
+                float inputs:roughness = 0.35
+                token outputs:surface
+            }
+        }
+    }
+
+    def Xform "Geom"
+    {
+        def Xform "Pole"
+        {
+            def Cylinder "Pole_Base" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                uniform token axis = "Z"
+                double height = 15
+                rel material:binding = </CCTV/Looks/Mat_Pole_DarkGray>
+                double radius = 10
+                double3 xformOp:translate = (0, 0, 7.5)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+
+            def Cylinder "Pole_Shaft" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                uniform token axis = "Z"
+                double height = 600
+                rel material:binding = </CCTV/Looks/Mat_Pole_DarkGray>
+                double radius = 5.5
+                double3 xformOp:translate = (0, 0, 315)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+
+            def Xform "Luminaire_Head"
+            {
+                def Cylinder "Luminaire_Arm" (
+                    prepend apiSchemas = ["MaterialBindingAPI"]
+                )
+                {
+                    uniform token axis = "Y"
+                    double height = 36
+                    rel material:binding = </CCTV/Looks/Mat_Pole_DarkGray>
+                    double radius = 2
+                    double3 xformOp:translate = (0, 18, 620)
+                    uniform token[] xformOpOrder = ["xformOp:translate"]
+                }
+
+                def Cube "Luminaire_Housing" (
+                    prepend apiSchemas = ["MaterialBindingAPI"]
+                )
+                {
+                    rel material:binding = </CCTV/Looks/Mat_Pole_DarkGray>
+                    double size = 1
+                    float3 xformOp:scale = (13, 48, 7)
+                    double3 xformOp:translate = (0, 44, 618)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+            }
+        }
+
+        def Xform "YawPivot"
+        {
+            double3 xformOp:translate = (0, 0, 560)
+            double3 xformOp:rotateXYZ = (0, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+
+        def Xform "Mount"
+        {
+            def Cylinder "Mount_Ring" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                uniform token axis = "Z"
+                double height = 8
+                rel material:binding = </CCTV/Looks/Mat_Pole_DarkGray>
+                double radius = 8.5
+                double3 xformOp:translate = (0, 0, 0)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+        }
+
+        def Xform "Cameras"
+        {
+            def Xform "Cam_01" (
+                customData = {
+                    string camera_style = "fixed_bullet"
+                    double semantic_pitch_deg = -15
+                    double semantic_yaw_deg = -60
+                    string sensor_role = "visual_camera_assembly"
+                }
+            )
+            {
+                matrix4d xformOp:transform = ( (0.5000000000000001, 0.8660254037844386, 0, 0), (-0.8365163037378078, 0.48296291314453427, -0.25881904510252074, 0), (-0.22414386804201336, 0.1294095225512604, 0.9659258262890683, 0), (-4, 2, 0, 1) )
+                uniform token[] xformOpOrder = ["xformOp:transform"]
+
+                def Cylinder "Bracket" (
+                    prepend apiSchemas = ["MaterialBindingAPI"]
+                )
+                {
+                    uniform token axis = "Y"
+                    double height = 12
+                    rel material:binding = </CCTV/Looks/Mat_Pole_DarkGray>
+                    double radius = 1.6
+                    double3 xformOp:translate = (0, 6, 0)
+                    uniform token[] xformOpOrder = ["xformOp:translate"]
+                }
+
+                def Cylinder "Body" (
+                    prepend apiSchemas = ["MaterialBindingAPI"]
+                )
+                {
+                    uniform token axis = "Y"
+                    double height = 22
+                    rel material:binding = </CCTV/Looks/Mat_Camera_Body>
+                    double radius = 4.5
+                    double3 xformOp:translate = (0, 20, 0)
+                    uniform token[] xformOpOrder = ["xformOp:translate"]
+                }
+
+                def Cube "Sunshield" (
+                    prepend apiSchemas = ["MaterialBindingAPI"]
+                )
+                {
+                    rel material:binding = </CCTV/Looks/Mat_Camera_Body>
+                    double size = 1
+                    float3 xformOp:scale = (11.5, 25, 2.5)
+                    double3 xformOp:translate = (0, 20, 5.2)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                }
+
+                def Cylinder "Lens" (
+                    prepend apiSchemas = ["MaterialBindingAPI"]
+                )
+                {
+                    uniform token axis = "Y"
+                    double height = 2
+                    rel material:binding = </CCTV/Looks/Mat_Camera_Lens>
+                    double radius = 4.3
+                    double3 xformOp:translate = (0, 32, 0)
+                    uniform token[] xformOpOrder = ["xformOp:translate"]
+                }
+
+                def Camera "ViewCamera"
+                {
+                    float focalLength = 8
+                    float horizontalAperture = 20.955
+                    float2 clippingRange = (1, 100000)
+                    double3 xformOp:translate = (0, 34, 0)
+                    double3 xformOp:rotateXYZ = (90, 0, 0)
+                    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+                }
+
+                def Xform "MicPod" (
+                    customData = {
+                        string array_geometry = "square"
+                        int channel_count = 4
+                        string mount_type = "integrated_under_camera"
+                        double nominal_spacing_m = 4
+                    }
+                )
+                {
+                    double3 xformOp:translate = (0, 20, -6.5)
+                    uniform token[] xformOpOrder = ["xformOp:translate"]
+
+                    def Cube "Body" (
+                        prepend apiSchemas = ["MaterialBindingAPI"]
+                    )
+                    {
+                        rel material:binding = </CCTV/Looks/Mat_MicPod>
+                        double size = 1
+                        float3 xformOp:scale = (8, 6, 2.5)
+                        double3 xformOp:translate = (0, 0, 0)
+                        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+                    }
+
+                    def Cylinder "Port_01" (
+                        prepend apiSchemas = ["MaterialBindingAPI"]
+                    )
+                    {
+                        uniform token axis = "Z"
+                        double height = 0.3
+                        rel material:binding = </CCTV/Looks/Mat_Mic_Port>
+                        double radius = 0.6
+                        double3 xformOp:translate = (-2, -2, -1.4)
+                        uniform token[] xformOpOrder = ["xformOp:translate"]
+                    }
+
+                    def Cylinder "Port_02" (
+                        prepend apiSchemas = ["MaterialBindingAPI"]
+                    )
+                    {
+                        uniform token axis = "Z"
+                        double height = 0.3
+                        rel material:binding = </CCTV/Looks/Mat_Mic_Port>
+                        double radius = 0.6
+                        double3 xformOp:translate = (2, -2, -1.4)
+                        uniform token[] xformOpOrder = ["xformOp:translate"]
+                    }
+
+                    def Cylinder "Port_03" (
+                        prepend apiSchemas = ["MaterialBindingAPI"]
+                    )
+                    {
+                        uniform token axis = "Z"
+                        double height = 0.3
+                        rel material:binding = </CCTV/Looks/Mat_Mic_Port>
+                        double radius = 0.6
+                        double3 xformOp:translate = (2, 2, -1.4)
+                        uniform token[] xformOpOrder = ["xformOp:translate"]
+                    }
+
+                    def Cylinder "Port_04" (
+                        prepend apiSchemas = ["MaterialBindingAPI"]
+                    )
+                    {
+                        uniform token axis = "Z"
+                        double height = 0.3
+                        rel material:binding = </CCTV/Looks/Mat_Mic_Port>
+                        double radius = 0.6
+                        double3 xformOp:translate = (-2, 2, -1.4)
+                        uniform token[] xformOpOrder = ["xformOp:translate"]
+                    }
+                }
+            }
+        }
+        }
+    }
+
+    def Xform "Sensors"
+    {
+        def Xform "CameraSensors"
+        {
+            def Xform "Cam_01_OpticalFrame" (
+                customData = {
+                    string parent_visual_prim = "/CCTV/Geom/YawPivot/Cameras/Cam_01"
+                    string sensor_role = "camera_optical_frame"
+                    string usd_camera_optical_axis = "-Z"
+                    string visual_forward_axis = "+Y"
+                }
+            )
+            {
+                matrix4d xformOp:transform = ( (0.5000000000000001, 0.8660254037844386, 0, 0), (-0.8365163037378078, 0.48296291314453427, -0.25881904510252074, 0), (-0.22414386804201336, 0.1294095225512604, 0.9659258262890683, 0), (-30.76852171960985, 17.454813220625096, 551.7177905567193, 1) )
+                uniform token[] xformOpOrder = ["xformOp:transform"]
+
+                def Xform "Cam_01_Sensor" (
+                    customData = {
+                        string camera_style = "fixed_bullet"
+                        string forward_reference = "intersection_center"
+                        bool light_enabled = 0
+                        double mount_height_m = 560
+                        string parent_visual_prim = "/CCTV/Geom/YawPivot/Cameras/Cam_01"
+                        bool renderable_usd_camera = 1
+                        double semantic_pitch_deg = -15
+                        double semantic_yaw_deg = -60
+                        string sensor_type = "camera"
+                    }
+                )
+                {
+                    custom double smartpole:mountHeightM = 560
+                    custom double smartpole:semanticPitchDeg = -15
+                    custom double smartpole:semanticYawDeg = -60
+                }
+            }
+        }
+
+        def Xform "AudioSensors"
+        {
+            def Xform "Cam_01_MicArray" (
+                customData = {
+                    string array_geometry = "square"
+                    int channel_count = 4
+                    double nominal_spacing_m = 4
+                    string parent_camera = "Cam_01"
+                    string sensor_type = "microphone_array"
+                    bool simulation_enabled = 1
+                }
+            )
+            {
+                custom int smartpole:channelCount = 4
+                custom double smartpole:nominalSpacingM = 4
+                matrix4d xformOp:transform = ( (0.5000000000000001, 0.8660254037844386, 0, 0), (-0.8365163037378078, 0.48296291314453427, -0.25881904510252074, 0), (-0.22414386804201336, 0.1294095225512604, 0.9659258262890683, 0), (-18.959589517224254, 10.636923034735729, 547.1928050702659, 1) )
+                uniform token[] xformOpOrder = ["xformOp:transform"]
+            }
+        }
+    }
+
+    def Xform "Metadata"
+    {
+        def Xform "SensorInfo" (
+            customData = {
+                int audio_array_count = 1
+                int audio_channels_per_array = 4
+                bool audio_simulation_enabled = 1
+                int camera_count = 1
+                string camera_type = "fixed_bullet"
+                int total_audio_channels = 4
+            }
+        )
+        {
+        }
+    }
+}

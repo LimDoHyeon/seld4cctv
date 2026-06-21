@@ -1,0 +1,421 @@
+#usda 1.0
+(
+    defaultPrim = "Vehicles"
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+def Xform "Vehicles" (
+    customData = {
+        string asset_category = "smart_city_vehicle_set"
+        string asset_name = "SmartCityUtilityVehicles_2x"
+        string asset_version = "1.0"
+        string forward_axis = "+Y"
+        string placement_origin = "ground_center"
+        string unit = "city_unit"
+        string up_axis = "Z"
+    }
+)
+{
+    float3 xformOp:scale = (0.01, 0.01, 0.01)
+    uniform token[] xformOpOrder = ["xformOp:scale"]
+
+    def Xform "Looks"
+    {
+        def Material "Mat_Body_WarmGray"
+        {
+            token outputs:surface.connect = </Vehicles/Looks/Mat_Body_WarmGray/PreviewSurface.outputs:surface>
+
+            def Shader "PreviewSurface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.58, 0.58, 0.54)
+                float inputs:metallic = 0
+                float inputs:roughness = 0.55
+                token outputs:surface
+            }
+        }
+
+        def Material "Mat_Body_DarkGray"
+        {
+            token outputs:surface.connect = </Vehicles/Looks/Mat_Body_DarkGray/PreviewSurface.outputs:surface>
+
+            def Shader "PreviewSurface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.19, 0.19, 0.19)
+                float inputs:metallic = 0.15
+                float inputs:roughness = 0.62
+                token outputs:surface
+            }
+        }
+
+        def Material "Mat_Glass_Black"
+        {
+            token outputs:surface.connect = </Vehicles/Looks/Mat_Glass_Black/PreviewSurface.outputs:surface>
+
+            def Shader "PreviewSurface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.012, 0.014, 0.016)
+                float inputs:metallic = 0
+                float inputs:roughness = 0.18
+                token outputs:surface
+            }
+        }
+
+        def Material "Mat_Tire_Black"
+        {
+            token outputs:surface.connect = </Vehicles/Looks/Mat_Tire_Black/PreviewSurface.outputs:surface>
+
+            def Shader "PreviewSurface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.006, 0.006, 0.006)
+                float inputs:metallic = 0
+                float inputs:roughness = 0.72
+                token outputs:surface
+            }
+        }
+
+        def Material "Mat_Wheel_Hub"
+        {
+            token outputs:surface.connect = </Vehicles/Looks/Mat_Wheel_Hub/PreviewSurface.outputs:surface>
+
+            def Shader "PreviewSurface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.46, 0.46, 0.43)
+                float inputs:metallic = 0.25
+                float inputs:roughness = 0.45
+                token outputs:surface
+            }
+        }
+
+        def Material "Mat_Lamp_Clear"
+        {
+            token outputs:surface.connect = </Vehicles/Looks/Mat_Lamp_Clear/PreviewSurface.outputs:surface>
+
+            def Shader "PreviewSurface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.86, 0.84, 0.72)
+                float inputs:metallic = 0
+                float inputs:roughness = 0.2
+                token outputs:surface
+            }
+        }
+    }
+
+    def Xform "Vehicle_01_ServiceVan" (
+        customData = {
+            string vehicle_role = "city_service_van"
+            string forward_axis = "+Y"
+        }
+    )
+    {
+        double3 xformOp:translate = (-260, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def Xform "Geom"
+        {
+            def Cube "Lower_Body" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                rel material:binding = </Vehicles/Looks/Mat_Body_WarmGray>
+                double size = 1
+                float3 xformOp:scale = (190, 430, 72)
+                double3 xformOp:translate = (0, 0, 62)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            }
+
+            def Cube "Cabin" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                rel material:binding = </Vehicles/Looks/Mat_Body_WarmGray>
+                double size = 1
+                float3 xformOp:scale = (178, 260, 86)
+                double3 xformOp:translate = (0, 16, 130)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            }
+
+            def Cube "Roof_Module" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                rel material:binding = </Vehicles/Looks/Mat_Body_DarkGray>
+                double size = 1
+                float3 xformOp:scale = (118, 96, 18)
+                double3 xformOp:translate = (0, -34, 182)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            }
+
+            def Cube "Windshield" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                rel material:binding = </Vehicles/Looks/Mat_Glass_Black>
+                double size = 1
+                float3 xformOp:scale = (128, 6, 48)
+                double3 xformOp:translate = (0, 151, 136)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            }
+
+            def Cube "Left_Side_Window" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                rel material:binding = </Vehicles/Looks/Mat_Glass_Black>
+                double size = 1
+                float3 xformOp:scale = (6, 132, 40)
+                double3 xformOp:translate = (-92, 10, 138)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            }
+
+            def Cube "Right_Side_Window" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                rel material:binding = </Vehicles/Looks/Mat_Glass_Black>
+                double size = 1
+                float3 xformOp:scale = (6, 132, 40)
+                double3 xformOp:translate = (92, 10, 138)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            }
+
+            def Cube "Front_Lamp_Left" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                rel material:binding = </Vehicles/Looks/Mat_Lamp_Clear>
+                double size = 1
+                float3 xformOp:scale = (34, 5, 16)
+                double3 xformOp:translate = (-48, 218, 64)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            }
+
+            def Cube "Front_Lamp_Right" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                rel material:binding = </Vehicles/Looks/Mat_Lamp_Clear>
+                double size = 1
+                float3 xformOp:scale = (34, 5, 16)
+                double3 xformOp:translate = (48, 218, 64)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            }
+
+            def Cylinder "Tire_FL" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                uniform token axis = "X"
+                double height = 20
+                rel material:binding = </Vehicles/Looks/Mat_Tire_Black>
+                double radius = 30
+                double3 xformOp:translate = (-98, 132, 32)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+
+            def Cylinder "Tire_FR" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                uniform token axis = "X"
+                double height = 20
+                rel material:binding = </Vehicles/Looks/Mat_Tire_Black>
+                double radius = 30
+                double3 xformOp:translate = (98, 132, 32)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+
+            def Cylinder "Tire_RL" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                uniform token axis = "X"
+                double height = 20
+                rel material:binding = </Vehicles/Looks/Mat_Tire_Black>
+                double radius = 30
+                double3 xformOp:translate = (-98, -136, 32)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+
+            def Cylinder "Tire_RR" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                uniform token axis = "X"
+                double height = 20
+                rel material:binding = </Vehicles/Looks/Mat_Tire_Black>
+                double radius = 30
+                double3 xformOp:translate = (98, -136, 32)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+        }
+    }
+
+    def Xform "Vehicle_02_CompactSedan" (
+        customData = {
+            string vehicle_role = "compact_city_sedan"
+            string forward_axis = "+Y"
+        }
+    )
+    {
+        double3 xformOp:translate = (260, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def Xform "Geom"
+        {
+            def Cube "Lower_Body" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                rel material:binding = </Vehicles/Looks/Mat_Body_DarkGray>
+                double size = 1
+                float3 xformOp:scale = (176, 388, 56)
+                double3 xformOp:translate = (0, 0, 52)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            }
+
+            def Cube "Cabin" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                rel material:binding = </Vehicles/Looks/Mat_Body_WarmGray>
+                double size = 1
+                float3 xformOp:scale = (144, 162, 62)
+                double3 xformOp:translate = (0, -22, 106)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            }
+
+            def Cube "Windshield" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                rel material:binding = </Vehicles/Looks/Mat_Glass_Black>
+                double size = 1
+                float3 xformOp:scale = (110, 6, 36)
+                double3 xformOp:translate = (0, 66, 111)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            }
+
+            def Cube "Rear_Window" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                rel material:binding = </Vehicles/Looks/Mat_Glass_Black>
+                double size = 1
+                float3 xformOp:scale = (110, 6, 34)
+                double3 xformOp:translate = (0, -110, 106)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            }
+
+            def Cube "Left_Side_Window" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                rel material:binding = </Vehicles/Looks/Mat_Glass_Black>
+                double size = 1
+                float3 xformOp:scale = (6, 104, 30)
+                double3 xformOp:translate = (-75, -22, 110)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            }
+
+            def Cube "Right_Side_Window" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                rel material:binding = </Vehicles/Looks/Mat_Glass_Black>
+                double size = 1
+                float3 xformOp:scale = (6, 104, 30)
+                double3 xformOp:translate = (75, -22, 110)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            }
+
+            def Cylinder "Roof_Sensor" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                uniform token axis = "Z"
+                double height = 16
+                rel material:binding = </Vehicles/Looks/Mat_Glass_Black>
+                double radius = 12
+                double3 xformOp:translate = (0, -18, 146)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+
+            def Cube "Front_Lamp_Left" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                rel material:binding = </Vehicles/Looks/Mat_Lamp_Clear>
+                double size = 1
+                float3 xformOp:scale = (30, 5, 13)
+                double3 xformOp:translate = (-44, 197, 50)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            }
+
+            def Cube "Front_Lamp_Right" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                rel material:binding = </Vehicles/Looks/Mat_Lamp_Clear>
+                double size = 1
+                float3 xformOp:scale = (30, 5, 13)
+                double3 xformOp:translate = (44, 197, 50)
+                uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
+            }
+
+            def Cylinder "Tire_FL" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                uniform token axis = "X"
+                double height = 18
+                rel material:binding = </Vehicles/Looks/Mat_Tire_Black>
+                double radius = 27
+                double3 xformOp:translate = (-91, 118, 29)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+
+            def Cylinder "Tire_FR" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                uniform token axis = "X"
+                double height = 18
+                rel material:binding = </Vehicles/Looks/Mat_Tire_Black>
+                double radius = 27
+                double3 xformOp:translate = (91, 118, 29)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+
+            def Cylinder "Tire_RL" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                uniform token axis = "X"
+                double height = 18
+                rel material:binding = </Vehicles/Looks/Mat_Tire_Black>
+                double radius = 27
+                double3 xformOp:translate = (-91, -118, 29)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+
+            def Cylinder "Tire_RR" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                uniform token axis = "X"
+                double height = 18
+                rel material:binding = </Vehicles/Looks/Mat_Tire_Black>
+                double radius = 27
+                double3 xformOp:translate = (91, -118, 29)
+                uniform token[] xformOpOrder = ["xformOp:translate"]
+            }
+        }
+    }
+}

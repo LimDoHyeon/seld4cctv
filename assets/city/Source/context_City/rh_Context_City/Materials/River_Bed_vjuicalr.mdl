@@ -1,0 +1,73 @@
+mdl 1.7;
+
+import ::OmniPBR_ClearCoat::OmniPBR_ClearCoat;
+import ::tex::gamma_mode;
+import ::state::normal;
+
+export material River_Bed_vjuicalr(*)
+= OmniPBR_ClearCoat::OmniPBR_ClearCoat(
+diffuse_color_constant: color(0.980000,0.980000,0.980000),
+diffuse_texture: texture_2d("./River_Bed_vjuicalr/vjuicalr_2K_Albedo.jpg", ::tex::gamma_srgb),
+albedo_desaturation: 0.f,
+albedo_add: 0.f,
+albedo_brightness: 1.0f,
+diffuse_tint: color(0.980000,0.980000,0.980000),
+reflection_roughness_constant: 1.000000,
+reflection_roughness_texture_influence: 0.f,
+reflectionroughness_texture: texture_2d("./River_Bed_vjuicalr/vjuicalr_2K_Roughness.jpg", ::tex::gamma_srgb), 
+metallic_constant: 0.000000,
+metallic_texture_influence: 0.85f, 
+metallic_texture: texture_2d(), 
+specular_level: 0.500000,
+
+enable_ORM_texture: false,
+ORM_texture: texture_2d(),
+
+ao_to_diffuse: 0.f,
+ao_texture: texture_2d(),
+
+enable_emission: false,
+emissive_color: color(0.980000,0.980000,0.980000),
+emissive_color_texture: texture_2d(), 
+emissive_mask_texture: texture_2d(),
+emissive_intensity: 2000.f,
+
+enable_opacity: false,
+enable_opacity_texture: false,
+opacity_constant: 1.000000,
+opacity_texture: texture_2d(),
+opacity_threshold: 0.f,
+
+enable_clearcoat: false,
+clearcoat_tint: color(0.980000,0.980000,0.980000),
+clearcoat_transparency: 1.000000,
+clearcoat_reflection_roughness: 0.000000,
+clearcoat_weight: 1.0f,
+clearcoat_flatten: 1.0f,
+clearcoat_ior: 1.56f,
+clearcoat_bump_factor: 1.f,
+clearcoat_normalmap_texture: texture_2d(),
+
+bump_factor: 1.f,
+
+normalmap_texture: texture_2d("./River_Bed_vjuicalr/vjuicalr_2K_Normal.jpg", ::tex::gamma_srgb),
+
+detail_bump_factor: .3f,
+detail_normalmap_texture: texture_2d(),
+
+project_uvw: false,
+world_or_object: false,
+
+uv_space_index: 0,
+
+texture_translate: float2(0.0f),
+texture_rotate: 0.f,
+texture_scale: float2(1.000000,1.000000),
+
+detail_texture_translate: float2(0.0f),
+detail_texture_rotate: 0.f,
+detail_texture_scale: float2(1.0f),
+
+clearcoat_texture_translate: float2(0.0f),
+clearcoat_texture_rotate: 0.f,
+clearcoat_texture_scale: float2(1.0f));
